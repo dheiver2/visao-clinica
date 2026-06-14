@@ -65,6 +65,12 @@
   .ref li{margin:6px 0;list-style:none;padding-left:16px;position:relative}
   .ref li:before{content:"▸";position:absolute;left:0;color:var(--accent)}
   @media(max-width:760px){.g3,.g2,.steps{grid-template-columns:1fr}h1{font-size:32px}}
+  .scene{width:100%;border:1px solid var(--border);border-radius:14px;background:var(--panel);
+    box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .persona{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:22px;text-align:center}
+  .persona svg{width:96px;height:96px;margin-bottom:8px}
+  .persona h3{font-size:16px}.persona p{font-size:13px}
 </style>
 </head>
 <body>
@@ -88,6 +94,100 @@
   <div class="wrap">
     <img class="shot" src="assets/app.png" alt="Tela do software Visão Clínica">
     <div class="shot-cap">Interface do software — captura ao vivo à esquerda, indicadores clínicos por condição à direita.</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Pessoas usando na prática</h2>
+    <svg class="scene" viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pessoa usando o software diante da webcam">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#10141c"/><stop offset="1" stop-color="#0a0b0e"/>
+        </linearGradient>
+      </defs>
+      <rect width="900" height="380" rx="14" fill="url(#bg)"/>
+      <!-- mesa -->
+      <rect x="60" y="318" width="780" height="8" rx="4" fill="#2a2e37"/>
+      <!-- laptop com o app -->
+      <g transform="translate(470,120)">
+        <rect x="0" y="0" width="320" height="196" rx="10" fill="#14161b" stroke="#2a2e37"/>
+        <rect x="14" y="14" width="292" height="168" rx="6" fill="#0a0b0e"/>
+        <text x="26" y="36" fill="#8b909b" font-family="sans-serif" font-size="10" letter-spacing="1">INDICADORES</text>
+        <!-- mini cards -->
+        <g font-family="sans-serif" font-size="9" fill="#e6e8ec">
+          <rect x="26" y="46" width="252" height="26" rx="6" fill="#1b1e25"/><text x="36" y="62">Tremor parkinsoniano</text><rect x="200" y="53" width="68" height="6" rx="3" fill="#ff5c5c"/>
+          <rect x="26" y="78" width="252" height="26" rx="6" fill="#1b1e25"/><text x="36" y="94">Sinais de TEA</text><rect x="200" y="85" width="54" height="6" rx="3" fill="#ffb020"/>
+          <rect x="26" y="110" width="252" height="26" rx="6" fill="#1b1e25"/><text x="36" y="126">Oculomotor</text><rect x="200" y="117" width="40" height="6" rx="3" fill="#3ecf8e"/>
+        </g>
+        <rect x="26" y="150" width="252" height="20" rx="6" fill="#1b1e25"/>
+        <rect x="-40" y="196" width="400" height="10" rx="5" fill="#1b1e25" stroke="#2a2e37"/>
+      </g>
+      <!-- pessoa (busto) com landmarks -->
+      <g transform="translate(150,110)">
+        <path d="M-70 210 q90 -150 180 0 z" fill="#1b1e25"/>          <!-- ombros -->
+        <ellipse cx="40" cy="92" rx="64" ry="74" fill="#1b1e25" stroke="#2a2e37"/> <!-- cabeça -->
+        <path d="M-24 40 q64 -56 128 0 q-10 -52 -64 -52 q-54 0 -64 52z" fill="#2a2e37"/> <!-- cabelo -->
+        <!-- malha de landmarks -->
+        <g fill="#3ecf8e"><circle cx="20" cy="80" r="2.4"/><circle cx="60" cy="80" r="2.4"/>
+          <circle cx="40" cy="100" r="2.4"/><circle cx="24" cy="120" r="2.4"/><circle cx="56" cy="120" r="2.4"/>
+          <circle cx="40" cy="60" r="2.4"/><circle cx="14" cy="98" r="2.4"/><circle cx="66" cy="98" r="2.4"/>
+          <circle cx="40" cy="134" r="2.4"/></g>
+        <g stroke="#3ecf8e" stroke-width="0.8" opacity="0.5" fill="none">
+          <path d="M20 80 L40 60 L60 80 M20 80 L40 100 L60 80 M24 120 L40 134 L56 120 M14 98 L40 100 L66 98"/>
+        </g>
+        <!-- feixe de captura -->
+        <path d="M118 92 L300 150" stroke="#4c8dff" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.6"/>
+      </g>
+      <!-- onda rPPG -->
+      <g transform="translate(60,300)" opacity="0.8">
+        <path d="M0 0 q12 -22 24 0 t24 0 q12 -22 24 0 t24 0 q12 -22 24 0 t24 0" fill="none" stroke="#ff5c5c" stroke-width="2"/>
+        <text x="0" y="22" fill="#8b909b" font-family="sans-serif" font-size="10">rPPG · frequência cardíaca sem contato</text>
+      </g>
+    </svg>
+    <div class="shot-cap">Captura por webcam com a malha de pontos (landmarks) e leitura de sinais vitais sem contato — o resultado clínico aparece na tela em segundos.</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Para quem é</h2>
+    <div class="grid g3">
+      <div class="persona">
+        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" fill="#14161b" stroke="#2a2e37"/>
+          <path d="M22 104 q38 -46 76 0z" fill="#4c8dff"/>
+          <circle cx="60" cy="50" r="24" fill="#e6e8ec"/>
+          <path d="M40 44 q20 -22 40 0 q-4 -22 -20 -22 q-16 0 -20 22z" fill="#2a2e37"/>
+          <path d="M48 92 v-14 M72 92 v-14" stroke="#3ecf8e" stroke-width="3" fill="none"/>
+          <circle cx="60" cy="100" r="5" fill="#3ecf8e"/>
+        </svg>
+        <h3>Profissional de saúde</h3>
+        <p>Triagem rápida de pacientes, com indicadores de risco e relatório em PDF.</p>
+      </div>
+      <div class="persona">
+        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" fill="#14161b" stroke="#2a2e37"/>
+          <path d="M22 104 q38 -46 76 0z" fill="#ffb020"/>
+          <circle cx="60" cy="50" r="24" fill="#e6e8ec"/>
+          <path d="M38 46 q22 -26 44 0 v-6 q-22 -20 -44 0z" fill="#2a2e37"/>
+          <g fill="none" stroke="#1b1e25" stroke-width="3"><circle cx="51" cy="50" r="7"/><circle cx="69" cy="50" r="7"/><path d="M58 50h4"/></g>
+        </svg>
+        <h3>Pesquisador(a)</h3>
+        <p>Acesso a todas as métricas e biomarcadores, exportação em CSV para análise.</p>
+      </div>
+      <div class="persona">
+        <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" fill="#14161b" stroke="#2a2e37"/>
+          <path d="M22 104 q38 -46 76 0z" fill="#3ecf8e"/>
+          <circle cx="60" cy="50" r="24" fill="#e6e8ec"/>
+          <path d="M36 50 q24 -30 48 0 q0 -26 -24 -26 q-24 0 -24 26z" fill="#2a2e37"/>
+          <g fill="#3ecf8e"><circle cx="51" cy="48" r="2"/><circle cx="69" cy="48" r="2"/><circle cx="60" cy="56" r="2"/></g>
+        </svg>
+        <h3>Pessoa em triagem</h3>
+        <p>Interface simplificada: basta olhar para a câmera e receber um indicador de risco.</p>
+      </div>
+    </div>
   </div>
 </section>
 
