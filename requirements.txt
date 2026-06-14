@@ -3,7 +3,9 @@ PySide6>=6.6
 
 # Visão computacional
 opencv-python>=4.9
-mediapipe>=0.10
+# 0.10.14 ainda inclui a API legada solutions (Face Mesh/Pose/Hands).
+# Versões >=0.10.15 removeram solutions em favor da Tasks API.
+mediapipe==0.10.14
 
 # Numérico / séries temporais
 numpy>=1.26
