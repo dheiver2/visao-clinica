@@ -32,19 +32,22 @@ python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Backend do LLM
+### Backend do LLM — autoconfiguração encapsulada
 
-O **backend primário é o `bitnet.cpp`** (inferência nativa 1,58-bit — máxima eficiência).
-Compile o `bitnet.cpp` oficial, converta o modelo `microsoft/bitnet-b1.58-2B-4T` para
-GGUF i2_s e aponte:
+**Nada precisa ser configurado manualmente.** Ao executar, o próprio software
+(`app/ai/bootstrap.py`) resolve o LLM local sozinho:
 
-```bash
-export BITNET_CPP_BIN=/caminho/bitnet.cpp/build/bin/llama-cli
-export BITNET_MODEL_GGUF=/caminho/models/bitnet-b1.58-2B-4T.i2_s.gguf
-```
+1. localiza ou **baixa** o modelo GGUF i2_s oficial em `models/` (1ª vez, online);
+2. localiza ou **compila** o `bitnet.cpp` em `vendor/` (1ª vez, se houver `git`+`cmake`);
+3. usa o **backend nativo `bitnet.cpp`** quando disponível (máxima eficiência);
+4. caso o passo nativo não seja possível, cai para o **fallback `transformers`**
+   automaticamente, com aviso — o app nunca interrompe por isso.
 
-Sem essas variáveis, o sistema cai para o **fallback `transformers`** (menos eficiente),
-com aviso explícito.
+Tudo fica **cacheado localmente**; após o primeiro uso, roda 100% offline.
+
+> Opcional: `export BITNET_CPP_BIN=...` e `export BITNET_MODEL_GGUF=...` apenas
+> sobrescrevem os caminhos autodetectados. O script `scripts/setup_bitnet.sh`
+> existe para pré-provisionar o backend, mas **não é obrigatório**.
 
 ## Execução
 

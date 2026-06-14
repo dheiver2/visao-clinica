@@ -34,7 +34,8 @@ def run_cli(mode: str, duration: float) -> int:
     features = extractor.capture(duration_s=duration)
 
     engine = ClinicalReasoningEngine()
-    engine.load_model()
+    print("Preparando IA local (modelo + bitnet.cpp)...")
+    engine.load_model(progress=lambda m: print(f"  · {m}"))
     print(f"LLM backend: {engine.backend_name}")
     analysis = engine.analyze_features(features)
 

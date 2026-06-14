@@ -37,7 +37,14 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         app.processEvents()
         try:
             features = extractor.capture(duration_s=30.0)
-            engine.load_model()
+            out.append("Preparando IA local (modelo + bitnet.cpp)...")
+            app.processEvents()
+
+            def _prog(m):
+                out.append(f"  · {m}")
+                app.processEvents()
+
+            engine.load_model(progress=_prog)
             out.append(f"LLM backend: {engine.backend_name}")
             analysis = engine.analyze_features(features)
             if mode_box.currentText() == "triagem":

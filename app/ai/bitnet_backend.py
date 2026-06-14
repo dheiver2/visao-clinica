@@ -90,16 +90,34 @@ class TransformersBackend(LLMBackend):
         return text.strip()
 
 
-def build_backend(model_gguf: str | os.PathLike | None = None) -> LLMBackend:
-    """Constrói o backend, priorizando bitnet.cpp e caindo para transformers."""
+def build_backend(model_gguf: str | os.PathLike | None = None,
+                  progress=None,
+                  allow_download: bool = True,
+                  allow_build: bool = True) -> LLMBackend:
+    """Constrói o backend de forma encapsulada (auto-bootstrap), priorizando bitnet.cpp.
+
+    O próprio software localiza/baixa o modelo e localiza/compila o bitnet.cpp via
+    ``bootstrap``; só cai para ``transformers`` se o caminho nativo não for possível.
+    Nenhuma configuração manual (env/scripts) é exigida do usuário.
+    """
+    # Caminho explícito tem prioridade; senão, deixa o bootstrap resolver tudo.
     gguf = model_gguf or os.environ.get("BITNET_MODEL_GGUF")
-    if gguf:
+    binary = os.environ.get("BITNET_CPP_BIN")
+
+    if not (gguf and binary):
+        from app.ai.bootstrap import bootstrap
+        paths = bootstrap(progress=progress, allow_download=allow_download,
+                          allow_build=allow_build)
+        gguf = gguf or (str(paths.gguf) if paths.gguf else None)
+        binary = binary or (str(paths.binary) if paths.binary else None)
+
+    if gguf and binary:
         try:
-            return BitnetCppBackend(gguf)
+            return BitnetCppBackend(gguf, binary=binary)
         except Exception as e:  # noqa: BLE001 - fallback intencional com aviso
             print(f"[AVISO] bitnet.cpp indisponível ({e}). "
                   f"Usando fallback transformers (menor eficiência).")
     else:
-        print("[AVISO] BITNET_MODEL_GGUF não definido; usando fallback transformers "
-              "(menor eficiência). Configure bitnet.cpp para ganhos nativos 1,58-bit.")
+        print("[AVISO] Backend nativo bitnet.cpp não disponível; usando fallback "
+              "transformers (menor eficiência).")
     return TransformersBackend()

@@ -45,9 +45,15 @@ class ClinicalReasoningEngine:
 
     # -- ciclo de vida -----------------------------------------------------------
 
-    def load_model(self) -> None:
-        """Carrega o BitNet b1.58 2B4T (bitnet.cpp primário; transformers fallback)."""
-        self._backend = build_backend(self._model_gguf)
+    def load_model(self, progress=None) -> None:
+        """Carrega o BitNet b1.58 2B4T de forma encapsulada (auto-bootstrap).
+
+        O próprio software resolve modelo e binário do bitnet.cpp; cai para
+        transformers apenas se o caminho nativo não for possível. ``progress`` é
+        uma função opcional callback(str) para reportar o andamento na UI/CLI.
+        """
+        if self._backend is None:
+            self._backend = build_backend(self._model_gguf, progress=progress)
 
     @property
     def backend_name(self) -> str:
