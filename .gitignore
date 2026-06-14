@@ -5,7 +5,8 @@ venv/
 data/*.db
 data/*.pdf
 data/*.csv
-models/*.gguf
+models/
+*.gguf
 .DS_Store
 
 # script de validação temporário
