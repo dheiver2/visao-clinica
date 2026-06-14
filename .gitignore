@@ -7,3 +7,6 @@ data/*.pdf
 data/*.csv
 models/*.gguf
 .DS_Store
+
+# script de validação temporário
+scripts/e2e_llm.py
