@@ -1,0 +1,76 @@
+"""Ponto de entrada.
+
+Uso:
+    python -m app.main                # GUI (PySide6) — modo Pesquisa por padrão
+    python -m app.main --cli          # pipeline em linha de comando
+    python -m app.main --mode triagem # interface/saída simplificada
+
+Variáveis de ambiente:
+    BITNET_MODEL_GGUF  caminho do modelo GGUF i2_s (ativa bitnet.cpp)
+    BITNET_CPP_BIN     caminho do binário de inferência do bitnet.cpp
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from app import DISCLAIMER
+
+
+def run_cli(mode: str, duration: float) -> int:
+    from app.clinical.reasoning_engine import ClinicalReasoningEngine
+    from app.report.exporter import export_csv, export_pdf
+    from app.storage.db import SessionStore
+    from app.vision.extractor import FeatureExtractor
+
+    print(DISCLAIMER, "\n")
+    extractor = FeatureExtractor()
+    if not extractor.available():
+        print("OpenCV/MediaPipe indisponíveis — instale as dependências.")
+        return 1
+
+    print(f"Capturando {duration:.0f}s pela webcam...")
+    features = extractor.capture(duration_s=duration)
+
+    engine = ClinicalReasoningEngine()
+    engine.load_model()
+    print(f"LLM backend: {engine.backend_name}")
+    analysis = engine.analyze_features(features)
+
+    if mode == "triagem":
+        print(f"\nNível de risco: {analysis.risk_level}")
+    else:
+        print("\n--- Análise (modo Pesquisa) ---")
+        print(features.summary_text())
+        print("\nHipóteses:", analysis.hypotheses)
+        print("Variáveis influentes:", analysis.influential_variables)
+        report = engine.generate_report(analysis)
+        export_pdf(report, analysis, "data/relatorio.pdf")
+        export_csv(features, analysis, "data/relatorio.csv")
+        print("Relatórios salvos em data/relatorio.pdf e data/relatorio.csv")
+
+    SessionStore().save(mode, features.to_dict(), analysis.to_dict())
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description="Triagem por Visão Computacional + BitNet")
+    p.add_argument("--cli", action="store_true", help="executa em linha de comando")
+    p.add_argument("--mode", choices=["pesquisa", "triagem"], default="pesquisa")
+    p.add_argument("--duration", type=float, default=30.0)
+    args = p.parse_args(argv)
+
+    if args.cli:
+        return run_cli(args.mode, args.duration)
+
+    try:
+        from app.ui.main_window import launch_gui
+    except Exception as e:  # noqa: BLE001
+        print(f"GUI indisponível ({e}). Use --cli.")
+        return 1
+    return launch_gui(default_mode=args.mode)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
