@@ -23,13 +23,15 @@ def _build_worker_class():
     class Worker(QThread):
         progress = Signal(str)
         frame = Signal(object)
-        finished_ok = Signal(object, object)   # (features, analysis)
+        panel_ready = Signal(object, object)   # (features, analysis) — instantâneo
+        summary_ready = Signal(str)            # narrativa do BitNet (background)
         failed = Signal(str)
 
-        def __init__(self, mode, duration, engine, extractor):
+        def __init__(self, mode, duration, engine, extractor, use_llm):
             super().__init__()
             self.mode, self.duration = mode, duration
             self.engine, self.extractor = engine, extractor
+            self.use_llm = use_llm
             self._stop = False
 
         def stop(self):
@@ -49,12 +51,15 @@ def _build_worker_class():
                     duration_s=self.duration, on_frame=_on_frame,
                     should_stop=lambda: self._stop)
 
-                self.progress.emit("Preparando IA local (BitNet)…")
-                self.engine.load_model(progress=lambda m: self.progress.emit(f"· {m}"))
-                self.progress.emit(f"Backend: {self.engine.backend_name}")
-                self.progress.emit("Analisando biomarcadores…")
-                analysis = self.engine.analyze_features(features)
-                self.finished_ok.emit(features, analysis)
+                # Resultado clínico INSTANTÂNEO (determinístico, sem LLM).
+                analysis = self.engine.screen(features)
+                self.panel_ready.emit(features, analysis)
+
+                # Narrativa do BitNet: opcional e em background (lenta em CPU).
+                if self.use_llm:
+                    self.progress.emit("Gerando narrativa do BitNet (background)…")
+                    self.engine.enrich_with_llm(analysis, features)
+                    self.summary_ready.emit(analysis.summary or "")
             except Exception as e:  # noqa: BLE001
                 self.failed.emit(str(e))
 
@@ -112,8 +117,8 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     from PySide6.QtCore import Qt
     from PySide6.QtGui import QPixmap
     from PySide6.QtWidgets import (
-        QApplication, QComboBox, QFrame, QHBoxLayout, QLabel, QProgressBar,
-        QPushButton, QScrollArea, QTextEdit, QVBoxLayout, QWidget,
+        QApplication, QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel,
+        QProgressBar, QPushButton, QScrollArea, QTextEdit, QVBoxLayout, QWidget,
     )
 
     from app.clinical.reasoning_engine import ClinicalReasoningEngine
@@ -137,10 +142,15 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     head_txt.addWidget(title)
     head_txt.addWidget(subtitle)
 
+    DURATION = 12.0
     mode_box = QComboBox()
     mode_box.addItems(["pesquisa", "triagem"])
     mode_box.setCurrentText(default_mode)
-    run_btn = QPushButton("Iniciar captura")
+    llm_chk = QCheckBox("Narrativa IA (lento)")
+    llm_chk.setChecked(False)
+    llm_chk.setToolTip("Gera um resumo do BitNet em background. O resultado clínico "
+                       "já aparece instantaneamente sem isso.")
+    run_btn = QPushButton(f"Iniciar captura ({DURATION:.0f}s)")
     stop_btn = QPushButton("Parar")
     stop_btn.setObjectName("ghost")
     stop_btn.setEnabled(False)
@@ -150,6 +160,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     header.addStretch()
     header.addWidget(QLabel("Modo:"))
     header.addWidget(mode_box)
+    header.addWidget(llm_chk)
     header.addWidget(run_btn)
     header.addWidget(stop_btn)
 
@@ -244,8 +255,8 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
             return
         status.setText(msg)
         log.append(msg)
-        if msg.startswith("Analisando"):
-            progress_bar.setRange(0, 0)  # indeterminado durante inferência
+        if msg.startswith("Gerando narrativa"):
+            progress_bar.setRange(0, 0)  # indeterminado durante a narrativa do LLM
 
     def on_frame(rgb):
         pm = QPixmap.fromImage(_rgb_to_qimage(rgb)).scaled(
@@ -253,7 +264,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
             Qt.SmoothTransformation)
         preview.setPixmap(pm)
 
-    def on_finished(features, analysis):
+    def on_panel(features, analysis):
         progress_bar.setRange(0, 100)
         progress_bar.setValue(100)
         research = mode_box.currentText() == "pesquisa"
@@ -270,9 +281,17 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         for i, cond in enumerate(shown):
             cards_layout.insertWidget(i, _condition_card(cond, research))
 
+        status.setText("Concluído — resultado clínico instantâneo.")
+        # Resultado já está pronto: libera a UI para nova captura imediatamente.
+        if not llm_chk.isChecked():
+            set_running(False)
+        else:
+            run_btn.setEnabled(False)  # narrativa ainda rodando em background
+
+    def on_summary(text: str):
+        if text:
+            log.append("\n— Resumo do BitNet —\n" + text)
         status.setText("Concluído.")
-        if research and analysis.summary:
-            log.append("\n— Resumo do BitNet —\n" + analysis.summary)
         set_running(False)
 
     def on_failed(msg: str):
@@ -285,10 +304,12 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         log.clear()
         clear_cards()
         set_running(True)
-        w = Worker(mode_box.currentText(), 30.0, engine, extractor)
+        w = Worker(mode_box.currentText(), DURATION, engine, extractor,
+                   use_llm=llm_chk.isChecked())
         w.progress.connect(on_progress)
         w.frame.connect(on_frame)
-        w.finished_ok.connect(on_finished)
+        w.panel_ready.connect(on_panel)
+        w.summary_ready.connect(on_summary)
         w.failed.connect(on_failed)
         state["worker"] = w
         w.start()

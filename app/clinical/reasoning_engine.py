@@ -77,41 +77,52 @@ class ClinicalReasoningEngine:
         acrescenta narrativa/hipóteses. Se o LLM falhar ou for desligado, a análise
         ainda retorna o painel completo de doenças.
         """
+        analysis = self.screen(features)          # instantâneo e determinístico
+        if use_llm:
+            self.enrich_with_llm(analysis, features)
+        return analysis
+
+    def screen(self, features: BiomarkerFeatures) -> ClinicalAnalysis:
+        """Avaliação clínica INSTANTÂNEA (sem LLM) — preciso e determinístico.
+
+        Esta é a saída clínica primária. Não depende do modelo e roda em ms.
+        """
         conditions = evaluate_conditions(features)
-        # Nível global = pior nível observado no painel.
         order = {"indeterminado": -1, "baixo": 0, "moderado": 1, "alto": 2}
         risk = max((c.level for c in conditions),
                    key=lambda lv: order.get(lv, -1), default="indeterminado")
         analysis = ClinicalAnalysis(conditions=conditions, risk_level=risk)
-
-        if use_llm:
-            try:
-                if self._backend is None:
-                    self.load_model()
-                panel_txt = "\n".join(
-                    f"- {c.name}: {c.level} (score {c.score:.2f}) {c.rationale}"
-                    for c in conditions)
-                prompt = (
-                    f"{_SYSTEM}\n\nBiomarcadores da sessão:\n{features.summary_text()}\n\n"
-                    f"Indicadores de triagem por condição (já calculados):\n{panel_txt}\n\n"
-                    "Correlacione os padrões motores, faciais e oculares e devolva um JSON "
-                    "com as chaves: summary (string), hypotheses (lista de strings), "
-                    "influential_variables (lista das variáveis mais determinantes)."
-                )
-                raw = self._backend.generate(prompt, max_tokens=640, temperature=0.4)
-                parsed = self._parse(raw)
-                analysis.summary = parsed.summary
-                analysis.hypotheses = parsed.hypotheses
-                analysis.influential_variables = parsed.influential_variables
-                analysis.raw = parsed.raw
-            except Exception as e:  # noqa: BLE001 - LLM é complementar, não bloqueia
-                analysis.summary = (
-                    f"[Raciocínio do LLM indisponível: {e}] "
-                    "Indicadores por condição calculados de forma determinística.")
-        if not analysis.hypotheses:
-            analysis.hypotheses = [
-                f"{c.name}: risco {c.level}" for c in analysis.top_conditions]
+        # Hipóteses derivadas do painel (garantidas, sem LLM).
+        analysis.hypotheses = [
+            f"{c.name}: risco {c.level}" for c in analysis.top_conditions]
+        analysis.influential_variables = [
+            fac for c in analysis.top_conditions for fac in c.factors]
         self._last = analysis
+        return analysis
+
+    def enrich_with_llm(self, analysis: ClinicalAnalysis,
+                        features: BiomarkerFeatures) -> ClinicalAnalysis:
+        """Acrescenta uma narrativa curta do BitNet por cima do painel (opcional).
+
+        Complementar e não-bloqueante por design: deve ser chamado em background.
+        Usa orçamento de tokens enxuto para reduzir latência.
+        """
+        try:
+            if self._backend is None:
+                self.load_model()
+            panel_txt = "\n".join(
+                f"- {c.name}: {c.level}" for c in analysis.top_conditions) or "- nenhum"
+            prompt = (
+                f"{_SYSTEM}\n\nIndicadores de triagem já calculados (mais relevantes):\n"
+                f"{panel_txt}\n\nEscreva um resumo clínico de 2–3 frases correlacionando "
+                "esses achados. Texto corrido, sem JSON."
+            )
+            analysis.summary = self._backend.generate(
+                prompt, max_tokens=160, temperature=0.4)
+        except Exception as e:  # noqa: BLE001 - LLM é complementar, não bloqueia
+            analysis.summary = (
+                f"[Narrativa do BitNet indisponível: {e}] "
+                "Indicadores por condição calculados de forma determinística.")
         return analysis
 
     def generate_report(self, analysis: ClinicalAnalysis) -> str:

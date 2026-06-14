@@ -18,7 +18,7 @@ import sys
 from app import DISCLAIMER
 
 
-def run_cli(mode: str, duration: float) -> int:
+def run_cli(mode: str, duration: float, use_llm: bool = False) -> int:
     from app.clinical.reasoning_engine import ClinicalReasoningEngine
     from app.report.exporter import export_csv, export_pdf
     from app.storage.db import SessionStore
@@ -34,10 +34,12 @@ def run_cli(mode: str, duration: float) -> int:
     features = extractor.capture(duration_s=duration)
 
     engine = ClinicalReasoningEngine()
-    print("Preparando IA local (modelo + bitnet.cpp)...")
-    engine.load_model(progress=lambda m: print(f"  · {m}"))
-    print(f"LLM backend: {engine.backend_name}")
-    analysis = engine.analyze_features(features)
+    # Resultado clínico instantâneo (determinístico). Narrativa do LLM é opt-in.
+    analysis = engine.screen(features)
+    if use_llm:
+        print("Gerando narrativa do BitNet (pode demorar em CPU)...")
+        engine.load_model(progress=lambda m: print(f"  · {m}"))
+        engine.enrich_with_llm(analysis, features)
 
     print(f"\nNível de risco global: {analysis.risk_level.upper()}")
     print("\n--- Indicadores clínicos por condição ---")
@@ -52,8 +54,13 @@ def run_cli(mode: str, duration: float) -> int:
         print("\n--- Biomarcadores ---")
         print(features.summary_text())
         print("\nHipóteses:", analysis.hypotheses)
-        print("Variáveis influentes:", analysis.influential_variables)
-        report = engine.generate_report(analysis)
+        # Relatório: usa a narrativa do LLM se gerada, senão um resumo do painel.
+        if use_llm and analysis.summary:
+            report = analysis.summary
+        else:
+            report = "Triagem por indicadores determinísticos:\n" + "\n".join(
+                f"- {c.name}: {c.level} (score {c.score:.2f})"
+                for c in analysis.conditions)
         export_pdf(report, analysis, "data/relatorio.pdf")
         export_csv(features, analysis, "data/relatorio.csv")
         print("Relatórios salvos em data/relatorio.pdf e data/relatorio.csv")
@@ -66,11 +73,13 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Triagem por Visão Computacional + BitNet")
     p.add_argument("--cli", action="store_true", help="executa em linha de comando")
     p.add_argument("--mode", choices=["pesquisa", "triagem"], default="pesquisa")
-    p.add_argument("--duration", type=float, default=30.0)
+    p.add_argument("--duration", type=float, default=12.0)
+    p.add_argument("--narrativa", action="store_true",
+                   help="gera a narrativa do BitNet (mais lento)")
     args = p.parse_args(argv)
 
     if args.cli:
-        return run_cli(args.mode, args.duration)
+        return run_cli(args.mode, args.duration, use_llm=args.narrativa)
 
     try:
         from app.ui.main_window import launch_gui

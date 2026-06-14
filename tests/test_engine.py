@@ -26,12 +26,20 @@ def test_analyze_enriches_with_llm_and_panel():
                               tremor_hand_hz=5.0, tremor_hand_amplitude=0.025,
                               facial_asymmetry=0.3)
     analysis = eng.analyze_features(feats)
-    # narrativa vem do LLM (FakeBackend)
-    assert analysis.hypotheses == ["h1"]
-    assert "tremor_hand_hz" in analysis.influential_variables
-    # painel clínico SEMPRE presente e risco derivado dele
+    # painel clínico SEMPRE presente e risco derivado dele (instantâneo)
     assert analysis.conditions
     assert analysis.risk_level in ("baixo", "moderado", "alto")
+    # hipóteses derivam do painel; narrativa do LLM preenche o summary
+    assert analysis.hypotheses
+    assert analysis.summary  # FakeBackend forneceu texto
+
+
+def test_screen_is_llm_free():
+    eng = ClinicalReasoningEngine()  # sem backend carregado
+    feats = BiomarkerFeatures(frames=900, fps=30.0, facial_asymmetry=0.4)
+    analysis = eng.screen(feats)
+    assert analysis.conditions and analysis.risk_level in ("moderado", "alto")
+    assert eng._backend is None  # screen() nunca carrega o modelo
 
 
 def test_analyze_without_llm_still_returns_panel():
