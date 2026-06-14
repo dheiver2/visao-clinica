@@ -28,6 +28,15 @@ com dataset clínico). Ferramenta de triagem/pesquisa — não diagnóstico.
 - Goodwin et al. *Automated detection of stereotypical motor movements.*
   Journal of Autism and Developmental Disorders, 2011.
 
+## Landmarks faciais de alta precisão (`app/vision/face_landmarker.py`)
+- MediaPipe **Face Landmarker** (Google): 478 landmarks 3D + **52 blendshapes**
+  (intensidades de Action Units medidas pela rede) + matriz de pose da cabeça.
+- Kartynnik et al. *Real-time Facial Surface Geometry from Monocular Video on
+  Mobile GPUs*, CVPR Workshops, 2019.
+- Os blendshapes substituem proxies geométricos no cálculo de hipomimia,
+  microexpressões, assimetria facial, piscar e olhar (`blendshape_features.py`),
+  com fallback automático para a malha geométrica quando o modelo não está presente.
+
 ## Processamento de sinal (`app/vision/signal.py`)
 - Casiez, Roussel, Vogel. *1€ Filter: a simple speed-based low-pass filter.*
   ACM CHI, 2012. (One-Euro)

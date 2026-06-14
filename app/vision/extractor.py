@@ -15,7 +15,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from . import motor_face, oculomotor, rppg, signal
+from . import blendshape_features, motor_face, oculomotor, rppg, signal
 from .features import BiomarkerFeatures
 
 try:
@@ -29,14 +29,23 @@ except Exception:  # pragma: no cover - dependências opcionais em dev
 class FeatureExtractor:
     """Captura frames da webcam e produz um BiomarkerFeatures por sessão."""
 
-    def __init__(self, camera_index: int = 0):
+    def __init__(self, camera_index: int = 0, use_landmarker: bool = True):
         self.camera_index = camera_index
         self._series: dict[str, list[float]] = defaultdict(list)
+        self._face_lm = None
         if _MEDIAPIPE_OK:
             self._mp_face = mp.solutions.face_mesh.FaceMesh(
                 refine_landmarks=True, max_num_faces=1)
             self._mp_pose = mp.solutions.pose.Pose()
             self._mp_hands = mp.solutions.hands.Hands(max_num_hands=2)
+            # Face Landmarker de alta precisão (478 landmarks + 52 blendshapes/AUs).
+            if use_landmarker:
+                try:
+                    from .face_landmarker import FaceLandmarker
+                    fl = FaceLandmarker()
+                    self._face_lm = fl if fl.available() else None
+                except Exception:  # noqa: BLE001 - fallback p/ malha geométrica
+                    self._face_lm = None
 
     def available(self) -> bool:
         return _MEDIAPIPE_OK
@@ -101,6 +110,13 @@ class FeatureExtractor:
             gx, gy = self._gaze_direction(lm)
             self._series["gaze_x"].append(gx)
             self._series["gaze_y"].append(gy)
+
+        # Blendshapes (AUs) de alta precisão, quando disponível
+        if self._face_lm is not None:
+            res = self._face_lm.detect(np.ascontiguousarray(rgb))
+            if res is not None and res.blendshapes:
+                for name, score in res.blendshapes.items():
+                    self._series[f"bs_{name}"].append(score)
         if hands.multi_hand_landmarks:
             wrist = hands.multi_hand_landmarks[0].landmark[0]
             self._series["hand_x"].append(wrist.x)
@@ -237,6 +253,17 @@ class FeatureExtractor:
               if k.startswith("fa_")]
         hypomimia = motor_face.hypomimia_index(au)
         stereotypy = motor_face.stereotypy_index(self._series.get("body_x", []), fps)
+        facial_asym_value = float(asym.mean()) if asym.size else 0.0
+
+        # --- Refinamento facial com blendshapes (AUs de alta precisão) ---
+        bs = {k[3:]: v for k, v in self._series.items() if k.startswith("bs_")}
+        if any(len(v) > 1 for v in bs.values()):
+            blink_rate = blendshape_features.blink_rate(bs, fps, duration_s) or blink_rate
+            facial_asym_value = blendshape_features.facial_asymmetry(bs)
+            micro_rate, micro_int = blendshape_features.microexpression(bs, fps, duration_s)
+            expr_amp = blendshape_features.expression_amplitude(bs)
+            hypomimia = max(hypomimia, blendshape_features.hypomimia_index(bs))
+            mouth_open = blendshape_features.mouth_open_ratio(bs)
 
         return BiomarkerFeatures(
             duration_s=duration_s,
@@ -250,7 +277,7 @@ class FeatureExtractor:
             blink_rate_per_min=blink_rate,
             gaze_dispersion=gaze_disp,
             saccade_rate=saccade_rate,
-            facial_asymmetry=float(asym.mean()) if asym.size else 0.0,
+            facial_asymmetry=facial_asym_value,
             body_movement_index=body,
             postural_sway=body,
             gaze_center_ratio=gaze_center,

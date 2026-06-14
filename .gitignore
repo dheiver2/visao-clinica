@@ -11,3 +11,6 @@ models/
 
 # script de validação temporário
 scripts/e2e_llm.py
+
+models/*.task
+models/face_landmarker.task
