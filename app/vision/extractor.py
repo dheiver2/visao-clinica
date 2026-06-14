@@ -78,6 +78,13 @@ class FeatureExtractor:
             lm = face.multi_face_landmarks[0].landmark
             self._series["face_asym"].append(self._facial_asymmetry(lm))
             self._series["ear"].append(self._eye_aspect_ratio(lm))
+            # Ativações faciais (estilo blendshape) para microexpressões
+            for name, val in self._facial_activations(lm).items():
+                self._series[f"fa_{name}"].append(val)
+            # Direção do olhar (íris normalizada na órbita) para saccades
+            gx, gy = self._gaze_direction(lm)
+            self._series["gaze_x"].append(gx)
+            self._series["gaze_y"].append(gy)
         if hands.multi_hand_landmarks:
             wrist = hands.multi_hand_landmarks[0].landmark[0]
             self._series["hand_x"].append(wrist.x)
@@ -105,6 +112,42 @@ class FeatureExtractor:
         h = abs(l.x - r.x)
         return v / max(h, 1e-6)
 
+    @staticmethod
+    def _facial_activations(lm) -> dict[str, float]:
+        """Ativações faciais normalizadas pela largura interocular (escala-invariante).
+
+        Proxies leves de unidades de ação usados para detectar microexpressões:
+        elevação das sobrancelhas, abertura da boca e estiramento dos cantos (sorriso).
+        """
+        eye_l, eye_r = lm[33], lm[263]
+        iod = max(((eye_l.x - eye_r.x) ** 2 + (eye_l.y - eye_r.y) ** 2) ** 0.5, 1e-6)
+        brow_raise = (abs(lm[105].y - lm[159].y) + abs(lm[334].y - lm[386].y)) / (2 * iod)
+        mouth_open = abs(lm[13].y - lm[14].y) / iod
+        mouth_stretch = abs(lm[61].x - lm[291].x) / iod
+        return {
+            "brow_raise": brow_raise,
+            "mouth_open": mouth_open,
+            "mouth_stretch": mouth_stretch,
+        }
+
+    @staticmethod
+    def _gaze_direction(lm) -> tuple[float, float]:
+        """Posição da íris dentro da órbita, em [-1, 1] nos eixos x e y.
+
+        Usa os centros de íris refinados (refine_landmarks=True: 468=esq, 473=dir)
+        relativos aos cantos do olho. Alimenta a detecção de saccades.
+        """
+        def _eye(iris, inner, outer, top, bottom):
+            cx = (inner.x + outer.x) / 2
+            cy = (top.y + bottom.y) / 2
+            w = max(abs(inner.x - outer.x), 1e-6)
+            h = max(abs(top.y - bottom.y), 1e-6)
+            return (iris.x - cx) / (w / 2), (iris.y - cy) / (h / 2)
+
+        lx, ly = _eye(lm[468], lm[133], lm[33], lm[159], lm[145])
+        rx, ry = _eye(lm[473], lm[362], lm[263], lm[386], lm[374])
+        return (lx + rx) / 2, (ly + ry) / 2
+
     def _dominant_freq(self, key: str, fps: float) -> tuple[float, float]:
         """Frequência dominante (Hz) e amplitude de uma série via FFT."""
         s = np.asarray(self._series.get(key, []), dtype=float)
@@ -126,9 +169,11 @@ class FeatureExtractor:
         blink_rate = blinks / (duration_s / 60.0) if duration_s else 0.0
 
         asym = np.asarray(self._series.get("face_asym", []), dtype=float)
-        gaze = float(np.std(self._series.get("body_x", [0]))) if frames else 0.0
         body = float(np.std(self._series.get("body_x", [0])) +
                      np.std(self._series.get("body_y", [0]))) if frames else 0.0
+
+        gaze_disp, saccade_rate = self._gaze_metrics(fps, duration_s)
+        micro_rate, micro_int = self._microexpression_metrics(fps, duration_s)
 
         return BiomarkerFeatures(
             duration_s=duration_s,
@@ -137,10 +182,59 @@ class FeatureExtractor:
             tremor_hand_hz=hand_hz,
             tremor_hand_amplitude=hand_amp,
             tremor_head_hz=head_hz,
+            microexpression_rate=micro_rate,
+            microexpression_intensity=micro_int,
             blink_rate_per_min=blink_rate,
-            gaze_dispersion=gaze,
+            gaze_dispersion=gaze_disp,
+            saccade_rate=saccade_rate,
             facial_asymmetry=float(asym.mean()) if asym.size else 0.0,
             body_movement_index=body,
             postural_sway=body,
             time_series={k: list(v) for k, v in self._series.items()},
         )
+
+    def _gaze_metrics(self, fps: float, duration_s: float) -> tuple[float, float]:
+        """Dispersão do olhar e taxa de saccades/min a partir de gaze_x/gaze_y.
+
+        Saccade = deslocamento angular do olhar acima de um limiar entre frames
+        consecutivos (movimento balístico rápido).
+        """
+        gx = np.asarray(self._series.get("gaze_x", []), dtype=float)
+        gy = np.asarray(self._series.get("gaze_y", []), dtype=float)
+        if gx.size < 3:
+            return 0.0, 0.0
+        dispersion = float(np.hypot(gx.std(), gy.std()))
+        speed = np.hypot(np.diff(gx), np.diff(gy)) * fps  # unidades-órbita/s
+        saccades = int(np.sum(np.diff((speed > 3.0).astype(int)) == 1))
+        rate = saccades / (duration_s / 60.0) if duration_s else 0.0
+        return dispersion, rate
+
+    def _microexpression_metrics(self, fps: float, duration_s: float) -> tuple[float, float]:
+        """Taxa (eventos/min) e intensidade média de microexpressões.
+
+        Detecta picos rápidos e breves (<~500 ms) nas ativações faciais — assinatura
+        temporal de microexpressões — somando-os entre os canais (sobrancelha, boca).
+        """
+        channels = [k for k in self._series if k.startswith("fa_")]
+        if not channels or fps <= 0:
+            return 0.0, 0.0
+        max_span = max(int(0.5 * fps), 1)  # janela de até ~500 ms
+        events, intensities = 0, []
+        for ch in channels:
+            s = np.asarray(self._series[ch], dtype=float)
+            if s.size < 5:
+                continue
+            base = float(np.median(s))
+            mad = float(np.median(np.abs(s - base))) or 1e-6
+            active = (np.abs(s - base) > 4 * mad).astype(int)
+            # bordas de subida = início de um evento
+            rises = np.where(np.diff(active) == 1)[0]
+            for r in rises:
+                seg = active[r + 1: r + 1 + max_span]
+                if seg.size and seg.sum() <= max_span:  # transiente curto
+                    events += 1
+                    peak = r + 1 + int(np.argmax(np.abs(s[r + 1: r + 1 + max_span] - base)))
+                    intensities.append(abs(s[min(peak, s.size - 1)] - base) / mad)
+        rate = events / (duration_s / 60.0) if duration_s else 0.0
+        intensity = float(np.mean(intensities)) if intensities else 0.0
+        return rate, intensity
