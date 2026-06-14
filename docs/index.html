@@ -106,52 +106,6 @@
       <img src="assets/face_scan.gif" alt="Animação da malha de landmarks rastreando o rosto" style="max-width:420px;width:100%;border:1px solid var(--border);border-radius:14px">
       <div class="shot-cap">Rastreamento em tempo real da malha facial durante a captura.</div>
     </div>
-    <svg class="scene" viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pessoa usando o software diante da webcam">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#10141c"/><stop offset="1" stop-color="#0a0b0e"/>
-        </linearGradient>
-      </defs>
-      <rect width="900" height="380" rx="14" fill="url(#bg)"/>
-      <!-- mesa -->
-      <rect x="60" y="318" width="780" height="8" rx="4" fill="#2a2e37"/>
-      <!-- laptop com o app -->
-      <g transform="translate(470,120)">
-        <rect x="0" y="0" width="320" height="196" rx="10" fill="#14161b" stroke="#2a2e37"/>
-        <rect x="14" y="14" width="292" height="168" rx="6" fill="#0a0b0e"/>
-        <text x="26" y="36" fill="#8b909b" font-family="sans-serif" font-size="10" letter-spacing="1">INDICADORES</text>
-        <!-- mini cards -->
-        <g font-family="sans-serif" font-size="9" fill="#e6e8ec">
-          <rect x="26" y="46" width="252" height="26" rx="6" fill="#1b1e25"/><text x="36" y="62">Tremor parkinsoniano</text><rect x="200" y="53" width="68" height="6" rx="3" fill="#ff5c5c"/>
-          <rect x="26" y="78" width="252" height="26" rx="6" fill="#1b1e25"/><text x="36" y="94">Sinais de TEA</text><rect x="200" y="85" width="54" height="6" rx="3" fill="#ffb020"/>
-          <rect x="26" y="110" width="252" height="26" rx="6" fill="#1b1e25"/><text x="36" y="126">Oculomotor</text><rect x="200" y="117" width="40" height="6" rx="3" fill="#3ecf8e"/>
-        </g>
-        <rect x="26" y="150" width="252" height="20" rx="6" fill="#1b1e25"/>
-        <rect x="-40" y="196" width="400" height="10" rx="5" fill="#1b1e25" stroke="#2a2e37"/>
-      </g>
-      <!-- pessoa (busto) com landmarks -->
-      <g transform="translate(150,110)">
-        <path d="M-70 210 q90 -150 180 0 z" fill="#1b1e25"/>          <!-- ombros -->
-        <ellipse cx="40" cy="92" rx="64" ry="74" fill="#1b1e25" stroke="#2a2e37"/> <!-- cabeça -->
-        <path d="M-24 40 q64 -56 128 0 q-10 -52 -64 -52 q-54 0 -64 52z" fill="#2a2e37"/> <!-- cabelo -->
-        <!-- malha de landmarks -->
-        <g fill="#3ecf8e"><circle cx="20" cy="80" r="2.4"/><circle cx="60" cy="80" r="2.4"/>
-          <circle cx="40" cy="100" r="2.4"/><circle cx="24" cy="120" r="2.4"/><circle cx="56" cy="120" r="2.4"/>
-          <circle cx="40" cy="60" r="2.4"/><circle cx="14" cy="98" r="2.4"/><circle cx="66" cy="98" r="2.4"/>
-          <circle cx="40" cy="134" r="2.4"/></g>
-        <g stroke="#3ecf8e" stroke-width="0.8" opacity="0.5" fill="none">
-          <path d="M20 80 L40 60 L60 80 M20 80 L40 100 L60 80 M24 120 L40 134 L56 120 M14 98 L40 100 L66 98"/>
-        </g>
-        <!-- feixe de captura -->
-        <path d="M118 92 L300 150" stroke="#4c8dff" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.6"/>
-      </g>
-      <!-- onda rPPG -->
-      <g transform="translate(60,300)" opacity="0.8">
-        <path d="M0 0 q12 -22 24 0 t24 0 q12 -22 24 0 t24 0 q12 -22 24 0 t24 0" fill="none" stroke="#ff5c5c" stroke-width="2"/>
-        <text x="0" y="22" fill="#8b909b" font-family="sans-serif" font-size="10">rPPG · frequência cardíaca sem contato</text>
-      </g>
-    </svg>
-    <div class="shot-cap">Captura por webcam com a malha de pontos (landmarks) e leitura de sinais vitais sem contato — o resultado clínico aparece na tela em segundos.</div>
   </div>
 </section>
 
@@ -161,9 +115,9 @@
     <p class="lead" style="margin-bottom:24px">O rastreamento facial opera com diferentes
       tons de pele, idades e características — a malha de landmarks se ajusta a cada rosto.</p>
     <div class="grid g3">
-      <div><img class="shot" src="assets/face_var1.png" alt="Rosto analisado — exemplo 1"></div>
-      <div><img class="shot" src="assets/face_var2.png" alt="Rosto analisado — exemplo 2"></div>
-      <div><img class="shot" src="assets/face_var3.png" alt="Rosto analisado — exemplo 3"></div>
+      <div><img class="shot" src="assets/real_var1.png" alt="Rosto analisado — exemplo 1"></div>
+      <div><img class="shot" src="assets/real_var2.png" alt="Rosto analisado — exemplo 2"></div>
+      <div><img class="shot" src="assets/real_var3.png" alt="Rosto analisado — exemplo 3"></div>
     </div>
   </div>
 </section>
