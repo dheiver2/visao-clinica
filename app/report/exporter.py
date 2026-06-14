@@ -19,6 +19,8 @@ def export_csv(features: BiomarkerFeatures, analysis: ClinicalAnalysis,
         for k, v in features.to_dict().items():
             w.writerow(["biomarcador", k, v])
         w.writerow(["analise", "risk_level", analysis.risk_level])
+        for c in analysis.conditions:
+            w.writerow(["condicao", c.name, f"{c.level} (score {c.score:.2f})"])
         for h in analysis.hypotheses:
             w.writerow(["analise", "hipotese", h])
         w.writerow(["aviso", "disclaimer", DISCLAIMER])
@@ -36,9 +38,15 @@ def export_pdf(report_text: str, analysis: ClinicalAnalysis,
     styles = getSampleStyleSheet()
     flow = [
         Paragraph("Relatório Técnico — Triagem por Visão Computacional", styles["Title"]),
-        Paragraph(f"Nível de risco: <b>{analysis.risk_level}</b>", styles["Normal"]),
-        Spacer(1, 12),
+        Paragraph(f"Nível de risco global: <b>{analysis.risk_level}</b>", styles["Normal"]),
+        Spacer(1, 10),
+        Paragraph("Indicadores clínicos de triagem por condição:", styles["Heading3"]),
     ]
+    for c in analysis.conditions:
+        flow.append(Paragraph(
+            f"• <b>{c.name}</b>: {c.level} (score {c.score:.2f}) — {c.rationale}",
+            styles["Normal"]))
+    flow.append(Spacer(1, 12))
     for para in report_text.split("\n\n"):
         flow.append(Paragraph(para.replace("\n", "<br/>"), styles["Normal"]))
         flow.append(Spacer(1, 8))

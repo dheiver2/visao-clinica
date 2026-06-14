@@ -20,18 +20,32 @@ def _engine():
     return eng
 
 
-def test_analyze_parses_json():
+def test_analyze_enriches_with_llm_and_panel():
     eng = _engine()
-    feats = BiomarkerFeatures(tremor_hand_hz=5.2, facial_asymmetry=0.3)
+    feats = BiomarkerFeatures(frames=900, fps=30.0,
+                              tremor_hand_hz=5.0, tremor_hand_amplitude=0.025,
+                              facial_asymmetry=0.3)
     analysis = eng.analyze_features(feats)
-    assert analysis.risk_level == "moderado"
+    # narrativa vem do LLM (FakeBackend)
     assert analysis.hypotheses == ["h1"]
     assert "tremor_hand_hz" in analysis.influential_variables
+    # painel clínico SEMPRE presente e risco derivado dele
+    assert analysis.conditions
+    assert analysis.risk_level in ("baixo", "moderado", "alto")
+
+
+def test_analyze_without_llm_still_returns_panel():
+    eng = ClinicalReasoningEngine()  # sem backend
+    feats = BiomarkerFeatures(frames=900, fps=30.0, facial_asymmetry=0.4)
+    analysis = eng.analyze_features(feats, use_llm=False)
+    assert len(analysis.conditions) >= 1
+    res = {c.key: c for c in analysis.conditions}
+    assert res["facial_palsy"].level in ("moderado", "alto")
 
 
 def test_explain_decision():
     eng = _engine()
-    eng.analyze_features(BiomarkerFeatures(tremor_hand_hz=5.2))
+    eng.analyze_features(BiomarkerFeatures(frames=900, fps=30.0, tremor_hand_hz=5.2))
     assert isinstance(eng.explain_decision(), str)
 
 

@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 from app import DISCLAIMER
 from app.ai.bitnet_backend import LLMBackend, build_backend
+from app.clinical.conditions import ConditionResult, evaluate_conditions
 from app.vision.features import BiomarkerFeatures
 
 
@@ -19,12 +20,19 @@ class ClinicalAnalysis:
     hypotheses: list[str] = field(default_factory=list)
     influential_variables: list[str] = field(default_factory=list)
     risk_level: str = "indeterminado"  # baixo | moderado | alto | indeterminado
+    conditions: list[ConditionResult] = field(default_factory=list)
     raw: str = ""
 
     def to_dict(self) -> dict:
         d = self.__dict__.copy()
+        d["conditions"] = [c.to_dict() for c in self.conditions]
         d["disclaimer"] = DISCLAIMER
         return d
+
+    @property
+    def top_conditions(self) -> list[ConditionResult]:
+        """Condições com nível ao menos moderado, mais relevantes primeiro."""
+        return [c for c in self.conditions if c.level in ("moderado", "alto")]
 
 
 _SYSTEM = (
@@ -61,19 +69,48 @@ class ClinicalReasoningEngine:
 
     # -- análise -----------------------------------------------------------------
 
-    def analyze_features(self, features: BiomarkerFeatures) -> ClinicalAnalysis:
-        """Interpreta os biomarcadores e gera hipóteses clínicas probabilísticas."""
-        if self._backend is None:
-            self.load_model()
-        prompt = (
-            f"{_SYSTEM}\n\nBiomarcadores da sessão:\n{features.summary_text()}\n\n"
-            "Correlacione os padrões motores, faciais e oculares e devolva um JSON com as "
-            "chaves: summary (string), hypotheses (lista de strings), "
-            "influential_variables (lista das variáveis mais determinantes), "
-            "risk_level (baixo|moderado|alto|indeterminado)."
-        )
-        raw = self._backend.generate(prompt, max_tokens=768, temperature=0.4)
-        analysis = self._parse(raw)
+    def analyze_features(self, features: BiomarkerFeatures,
+                         use_llm: bool = True) -> ClinicalAnalysis:
+        """Avalia o painel clínico (garantido) e enriquece com o raciocínio do BitNet.
+
+        A avaliação por condição é determinística e SEMPRE preenchida — o LLM só
+        acrescenta narrativa/hipóteses. Se o LLM falhar ou for desligado, a análise
+        ainda retorna o painel completo de doenças.
+        """
+        conditions = evaluate_conditions(features)
+        # Nível global = pior nível observado no painel.
+        order = {"indeterminado": -1, "baixo": 0, "moderado": 1, "alto": 2}
+        risk = max((c.level for c in conditions),
+                   key=lambda lv: order.get(lv, -1), default="indeterminado")
+        analysis = ClinicalAnalysis(conditions=conditions, risk_level=risk)
+
+        if use_llm:
+            try:
+                if self._backend is None:
+                    self.load_model()
+                panel_txt = "\n".join(
+                    f"- {c.name}: {c.level} (score {c.score:.2f}) {c.rationale}"
+                    for c in conditions)
+                prompt = (
+                    f"{_SYSTEM}\n\nBiomarcadores da sessão:\n{features.summary_text()}\n\n"
+                    f"Indicadores de triagem por condição (já calculados):\n{panel_txt}\n\n"
+                    "Correlacione os padrões motores, faciais e oculares e devolva um JSON "
+                    "com as chaves: summary (string), hypotheses (lista de strings), "
+                    "influential_variables (lista das variáveis mais determinantes)."
+                )
+                raw = self._backend.generate(prompt, max_tokens=640, temperature=0.4)
+                parsed = self._parse(raw)
+                analysis.summary = parsed.summary
+                analysis.hypotheses = parsed.hypotheses
+                analysis.influential_variables = parsed.influential_variables
+                analysis.raw = parsed.raw
+            except Exception as e:  # noqa: BLE001 - LLM é complementar, não bloqueia
+                analysis.summary = (
+                    f"[Raciocínio do LLM indisponível: {e}] "
+                    "Indicadores por condição calculados de forma determinística.")
+        if not analysis.hypotheses:
+            analysis.hypotheses = [
+                f"{c.name}: risco {c.level}" for c in analysis.top_conditions]
         self._last = analysis
         return analysis
 

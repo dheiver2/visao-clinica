@@ -39,10 +39,17 @@ def run_cli(mode: str, duration: float) -> int:
     print(f"LLM backend: {engine.backend_name}")
     analysis = engine.analyze_features(features)
 
-    if mode == "triagem":
-        print(f"\nNível de risco: {analysis.risk_level}")
-    else:
-        print("\n--- Análise (modo Pesquisa) ---")
+    print(f"\nNível de risco global: {analysis.risk_level.upper()}")
+    print("\n--- Indicadores clínicos por condição ---")
+    for c in analysis.conditions:
+        marca = {"alto": "!!", "moderado": " ·", "baixo": "  ", "indeterminado": " ?"}
+        print(f" [{marca.get(c.level, '  ')}] {c.name}: {c.level} "
+              f"(score {c.score:.2f})")
+        if mode != "triagem" and c.factors:
+            print(f"        ↳ {c.rationale}")
+
+    if mode != "triagem":
+        print("\n--- Biomarcadores ---")
         print(features.summary_text())
         print("\nHipóteses:", analysis.hypotheses)
         print("Variáveis influentes:", analysis.influential_variables)
