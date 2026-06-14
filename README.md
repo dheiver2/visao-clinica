@@ -112,6 +112,14 @@ usa instabilidade de fixação (BCEA); autismo usa estereotipia; estresse usa VF
 > autismo dependem de avaliação especializada (morfologia craniofacial, genética,
 > avaliação comportamental) — o indicador dinâmico é **apenas auxiliar**.
 
+
+## App na Área de Trabalho (macOS)
+
+```bash
+bash scripts/make_app_bundle.sh
+```
+Cria "Visão Clínica.app" no Desktop (ícone próprio + permissão de câmera). Duplo-clique para abrir.
+
 ## Testes
 
 ```bash
