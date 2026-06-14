@@ -187,6 +187,7 @@ class FeatureExtractor:
 
         gaze_disp, saccade_rate = self._gaze_metrics(fps, duration_s)
         micro_rate, micro_int = self._microexpression_metrics(fps, duration_s)
+        gaze_center, expr_amp, periodicity, mouth_open = self._composite_metrics(fps)
 
         return BiomarkerFeatures(
             duration_s=duration_s,
@@ -203,8 +204,44 @@ class FeatureExtractor:
             facial_asymmetry=float(asym.mean()) if asym.size else 0.0,
             body_movement_index=body,
             postural_sway=body,
+            gaze_center_ratio=gaze_center,
+            expression_amplitude=expr_amp,
+            movement_periodicity=periodicity,
+            mouth_open_ratio=mouth_open,
             time_series={k: list(v) for k, v in self._series.items()},
         )
+
+    def _composite_metrics(self, fps: float):
+        """Marcadores para TEA/Parkinson/Alzheimer/Down.
+
+        Retorna (gaze_center_ratio, expression_amplitude, movement_periodicity,
+        mouth_open_ratio).
+        """
+        gx = np.asarray(self._series.get("gaze_x", []), dtype=float)
+        gy = np.asarray(self._series.get("gaze_y", []), dtype=float)
+        if gx.size:
+            centered = (np.abs(gx) < 0.5) & (np.abs(gy) < 0.5)
+            gaze_center = float(centered.mean())
+        else:
+            gaze_center = 0.0
+
+        # Expressividade: amplitude média (desvio) dos canais de ativação facial.
+        fa = [np.asarray(v, dtype=float) for k, v in self._series.items()
+              if k.startswith("fa_") and len(v) > 1]
+        expr_amp = float(np.mean([s.std() for s in fa])) if fa else 0.0
+
+        # Periodicidade do movimento corporal: força do pico espectral dominante.
+        body = np.asarray(self._series.get("body_x", []), dtype=float)
+        if body.size >= 16:
+            b = body - body.mean()
+            spec = np.abs(np.fft.rfft(b))[1:]
+            periodicity = float(spec.max() / (spec.sum() + 1e-9)) if spec.size else 0.0
+        else:
+            periodicity = 0.0
+
+        mo = np.asarray(self._series.get("fa_mouth_open", []), dtype=float)
+        mouth_open = float((mo > 0.12).mean()) if mo.size else 0.0
+        return gaze_center, expr_amp, periodicity, mouth_open
 
     def _gaze_metrics(self, fps: float, duration_s: float) -> tuple[float, float]:
         """Dispersão do olhar e taxa de saccades/min a partir de gaze_x/gaze_y.

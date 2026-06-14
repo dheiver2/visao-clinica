@@ -162,8 +162,90 @@ def _eval_dyskinesia(f: BiomarkerFeatures):
     return score, factors
 
 
+def _eval_autism_signs(f: BiomarkerFeatures):
+    # Sinais compatíveis com TEA: contato visual reduzido, baixa expressividade
+    # facial e movimentos repetitivos (estereotipias).
+    low_eye_contact = _band(0.55 - f.gaze_center_ratio, 0.0, 0.45)
+    low_expressivity = _band(6.0 - f.microexpression_rate, 0.0, 6.0)
+    repetitive = _clamp(_band(f.movement_periodicity, 0.15, 0.45)
+                        * _band(f.body_movement_index, 0.04, 0.25) + 0.4
+                        * _band(f.movement_periodicity, 0.2, 0.5))
+    atypical_gaze = _band(f.saccade_rate, 120.0, 240.0)
+    score = _clamp(0.35 * low_eye_contact + 0.25 * low_expressivity
+                   + 0.25 * repetitive + 0.15 * atypical_gaze)
+    factors = []
+    if low_eye_contact > 0.3:
+        factors.append(f"contato visual reduzido (olhar ao centro {f.gaze_center_ratio:.0%})")
+    if low_expressivity > 0.3:
+        factors.append("expressividade facial reduzida")
+    if repetitive > 0.3:
+        factors.append("movimentos repetitivos / estereotipias")
+    return score, factors
+
+
+def _eval_parkinson_composite(f: BiomarkerFeatures):
+    # Perfil parkinsoniano: tremor de repouso + hipomimia + piscar reduzido +
+    # bradicinesia (lentidão/redução de movimento).
+    tremor = _bell(f.tremor_hand_hz, 5.0, 2.5) * _band(f.tremor_hand_amplitude, 0.004, 0.03)
+    hypomimia = _band(4.0 - f.microexpression_rate, 0.0, 4.0)
+    low_blink = _band(10.0 - f.blink_rate_per_min, 0.0, 8.0)
+    bradykinesia = _band(0.03 - f.body_movement_index, 0.0, 0.03)
+    score = _clamp(0.35 * tremor + 0.25 * hypomimia + 0.2 * low_blink + 0.2 * bradykinesia)
+    factors = []
+    if tremor > 0.3:
+        factors.append(f"tremor de repouso ~{f.tremor_hand_hz:.1f} Hz")
+    if hypomimia > 0.3:
+        factors.append("hipomimia (face em máscara)")
+    if low_blink > 0.3:
+        factors.append("piscar reduzido")
+    if bradykinesia > 0.3:
+        factors.append("bradicinesia (movimento reduzido)")
+    return score, factors
+
+
+def _eval_alzheimer_signs(f: BiomarkerFeatures):
+    # Comprometimento cognitivo (tipo Alzheimer): instabilidade oculomotora,
+    # fixação prejudicada e expressividade reduzida. Marcadores oculares são dos
+    # mais estudados em demências.
+    gaze_instability = _band(f.gaze_dispersion, 0.14, 0.4)
+    poor_fixation = _band(0.5 - f.gaze_center_ratio, 0.0, 0.4)
+    erratic_saccade = _band(f.saccade_rate, 120.0, 240.0)
+    low_expressivity = _band(4.0 - f.microexpression_rate, 0.0, 4.0)
+    score = _clamp(0.35 * gaze_instability + 0.25 * poor_fixation
+                   + 0.25 * erratic_saccade + 0.15 * low_expressivity)
+    factors = []
+    if gaze_instability > 0.3:
+        factors.append("instabilidade do olhar / fixação")
+    if erratic_saccade > 0.3:
+        factors.append(f"saccades erráticas {f.saccade_rate:.0f}/min")
+    if low_expressivity > 0.3:
+        factors.append("expressividade reduzida")
+    return score, factors
+
+
+def _eval_down_signs(f: BiomarkerFeatures):
+    # Sinais compatíveis com Síndrome de Down a partir de marcadores dinâmicos de
+    # HIPOTONIA (tônus reduzido): boca frequentemente entreaberta, baixa amplitude
+    # de expressão e movimento reduzido. ATENÇÃO: o diagnóstico depende de morfologia
+    # craniofacial e confirmação genética — este indicador dinâmico é apenas auxiliar.
+    mouth_open = _band(f.mouth_open_ratio, 0.25, 0.7)
+    low_tone = _band(0.015 - f.expression_amplitude, 0.0, 0.015)
+    low_movement = _band(0.025 - f.body_movement_index, 0.0, 0.025)
+    score = _clamp(0.5 * mouth_open + 0.3 * low_tone + 0.2 * low_movement)
+    factors = []
+    if mouth_open > 0.3:
+        factors.append(f"boca entreaberta {f.mouth_open_ratio:.0%} do tempo (hipotonia)")
+    if low_tone > 0.3:
+        factors.append("baixa amplitude de expressão facial")
+    return score, factors
+
+
 # (key, nome clínico, avaliador)
 PANEL = [
+    ("autism_signs", "Sinais compatíveis com TEA (autismo)", _eval_autism_signs),
+    ("parkinson_composite", "Perfil parkinsoniano (composto)", _eval_parkinson_composite),
+    ("alzheimer_signs", "Sinais de comprometimento cognitivo (tipo Alzheimer)", _eval_alzheimer_signs),
+    ("down_signs", "Sinais compatíveis com Síndrome de Down", _eval_down_signs),
     ("parkinsonian_tremor", "Tremor parkinsoniano (repouso 4–6 Hz)", _eval_parkinsonian_tremor),
     ("facial_palsy", "Assimetria facial / paralisia (Bell, AVC)", _eval_facial_palsy),
     ("oculomotor", "Disfunção oculomotora", _eval_oculomotor),

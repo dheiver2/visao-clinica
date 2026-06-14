@@ -39,6 +39,12 @@ class BiomarkerFeatures:
     body_movement_index: float = 0.0
     postural_sway: float = 0.0
 
+    # Marcadores compostos (TEA, Parkinson, Alzheimer, Down)
+    gaze_center_ratio: float = 0.0       # fração do tempo com olhar ao centro (contato visual)
+    expression_amplitude: float = 0.0    # amplitude média de ativação facial (expressividade)
+    movement_periodicity: float = 0.0    # força de periodicidade do movimento (repetitivo/estereotipia)
+    mouth_open_ratio: float = 0.0        # fração do tempo com boca entreaberta (hipotonia)
+
     # Séries temporais brutas para processamento paralelo (Dask)
     time_series: dict[str, list[float]] = field(default_factory=dict)
 

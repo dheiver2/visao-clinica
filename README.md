@@ -66,6 +66,26 @@ Use o launcher (usa sempre o Python do `.venv`, sem precisar ativar nada):
 - **Pesquisa:** todas as métricas, hipóteses, variáveis influentes e relatório completo.
 - **Triagem:** interface simplificada, apenas indicadores de risco.
 
+## Painel clínico (12 indicadores de triagem)
+
+Saída **determinística e instantânea** por condição (não depende do LLM). Inclui
+indicadores compostos para os transtornos-alvo:
+
+| Transtorno | Biomarcadores combinados |
+|---|---|
+| Sinais compatíveis com **TEA (autismo)** | contato visual reduzido, baixa expressividade, movimentos repetitivos |
+| **Perfil parkinsoniano** | tremor de repouso 4–6 Hz + hipomimia + piscar reduzido + bradicinesia |
+| Sinais tipo **Alzheimer** (comprometimento cognitivo) | instabilidade oculomotora, fixação prejudicada, saccades erráticas |
+| Sinais compatíveis com **Síndrome de Down** | hipotonia: boca entreaberta, baixa amplitude facial, movimento reduzido |
+
+Mais 8 indicadores de base (tremor, paralisia facial, oculomotor, piscar,
+sonolência, estresse, hipomimia, discinesia).
+
+> **Limitações importantes:** são indicadores probabilísticos de **triagem/pesquisa**,
+> com limiares **heurísticos não calibrados** em dataset clínico. Síndrome de Down e
+> autismo dependem de avaliação especializada (morfologia craniofacial, genética,
+> avaliação comportamental) — o indicador dinâmico é **apenas auxiliar**.
+
 ## Testes
 
 ```bash
