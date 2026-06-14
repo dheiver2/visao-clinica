@@ -42,11 +42,13 @@ def run_cli(mode: str, duration: float, use_llm: bool = False) -> int:
         engine.enrich_with_llm(analysis, features)
 
     print(f"\nNível de risco global: {analysis.risk_level.upper()}")
+    print(f"Qualidade do sinal: {features.signal_quality:.0%} "
+          f"(face {features.face_detection_rate:.0%})")
     print("\n--- Indicadores clínicos por condição ---")
     for c in analysis.conditions:
         marca = {"alto": "!!", "moderado": " ·", "baixo": "  ", "indeterminado": " ?"}
         print(f" [{marca.get(c.level, '  ')}] {c.name}: {c.level} "
-              f"(score {c.score:.2f})")
+              f"(score {c.score:.2f} · conf {c.confidence:.0%})")
         if mode != "triagem" and c.factors:
             print(f"        ↳ {c.rationale}")
 

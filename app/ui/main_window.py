@@ -106,7 +106,8 @@ def _condition_card(cond, research: bool):
     lay.addWidget(bar_bg)
 
     if research:
-        info = QLabel(f"score {cond.score:.2f} — {cond.rationale}")
+        info = QLabel(f"score {cond.score:.2f} · confiança {cond.confidence:.0%} — "
+                      f"{cond.rationale}")
         info.setStyleSheet(f"color:{theme.MUTED}; font-size:11px;")
         info.setWordWrap(True)
         lay.addWidget(info)
@@ -281,7 +282,11 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         for i, cond in enumerate(shown):
             cards_layout.insertWidget(i, _condition_card(cond, research))
 
-        status.setText("Concluído — resultado clínico instantâneo.")
+        q = getattr(features, "signal_quality", 1.0)
+        qtxt = f"qualidade do sinal {q:.0%}"
+        if q < 0.5:
+            qtxt += " ⚠ (melhore iluminação/enquadramento)"
+        status.setText(f"Concluído — resultado instantâneo · {qtxt}.")
         # Resultado já está pronto: libera a UI para nova captura imediatamente.
         if not llm_chk.isChecked():
             set_running(False)

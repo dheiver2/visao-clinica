@@ -23,11 +23,13 @@ class ConditionResult:
     level: str                        # baixo | moderado | alto | indeterminado
     factors: list[str] = field(default_factory=list)   # biomarcadores que contribuíram
     rationale: str = ""               # explicação curta e legível
+    confidence: float = 1.0           # 0..1 (qualidade do sinal que sustenta o score)
 
     def to_dict(self) -> dict:
         return {
             "key": self.key, "name": self.name, "score": round(self.score, 3),
             "level": self.level, "factors": self.factors, "rationale": self.rationale,
+            "confidence": round(self.confidence, 3),
         }
 
 
@@ -60,12 +62,18 @@ def _level(score: float) -> str:
 # -- definição do painel --------------------------------------------------------
 # Cada avaliador recebe BiomarkerFeatures e retorna (score, factors).
 
+def _snr_gate(f: BiomarkerFeatures) -> float:
+    # Oscilação só conta como tremor real se o pico espectral se destacar do ruído.
+    return _band(f.tremor_snr, 3.0, 12.0)
+
+
 def _eval_parkinsonian_tremor(f: BiomarkerFeatures):
-    # Tremor de repouso parkinsoniano: 4–6 Hz com amplitude perceptível.
+    # Tremor de repouso parkinsoniano: 4–6 Hz com amplitude perceptível e SNR alto.
     freq = _bell(f.tremor_hand_hz, center=5.0, width=2.5)
     amp = _band(f.tremor_hand_amplitude, 0.004, 0.03)
     head = _bell(f.tremor_head_hz, center=5.0, width=3.0) * 0.5
-    score = _clamp(0.6 * freq * amp + 0.4 * max(freq * amp, head))
+    gate = _snr_gate(f)
+    score = _clamp((0.6 * freq * amp + 0.4 * max(freq * amp, head)) * gate)
     factors = []
     if freq > 0.3:
         factors.append(f"tremor de mão ~{f.tremor_hand_hz:.1f} Hz (faixa 4–6 Hz)")
@@ -186,7 +194,8 @@ def _eval_autism_signs(f: BiomarkerFeatures):
 def _eval_parkinson_composite(f: BiomarkerFeatures):
     # Perfil parkinsoniano: tremor de repouso + hipomimia + piscar reduzido +
     # bradicinesia (lentidão/redução de movimento).
-    tremor = _bell(f.tremor_hand_hz, 5.0, 2.5) * _band(f.tremor_hand_amplitude, 0.004, 0.03)
+    tremor = (_bell(f.tremor_hand_hz, 5.0, 2.5)
+              * _band(f.tremor_hand_amplitude, 0.004, 0.03) * _snr_gate(f))
     hypomimia = _band(4.0 - f.microexpression_rate, 0.0, 4.0)
     low_blink = _band(10.0 - f.blink_rate_per_min, 0.0, 8.0)
     bradykinesia = _band(0.03 - f.body_movement_index, 0.0, 0.03)
@@ -258,14 +267,23 @@ PANEL = [
 
 
 def evaluate_conditions(f: BiomarkerFeatures) -> list[ConditionResult]:
-    """Avalia TODAS as condições do painel; garante uma saída por doença."""
+    """Avalia TODAS as condições do painel; garante uma saída por doença.
+
+    Cada resultado carrega uma CONFIANÇA derivada da qualidade do sinal (detecção
+    de face × iluminação) e da quantidade de dados — para distinguir um achado
+    bem-sustentado de um obtido em condições ruins.
+    """
     insufficient = f.frames < 10
+    # Confiança base: qualidade do sinal modulada pela duração efetiva da captura.
+    data_factor = _clamp(f.frames / 200.0)        # ~7s @30fps para confiança plena
+    base_conf = _clamp(f.signal_quality * (0.5 + 0.5 * data_factor))
     results: list[ConditionResult] = []
     for key, name, fn in PANEL:
         if insufficient:
             results.append(ConditionResult(
                 key=key, name=name, score=0.0, level="indeterminado",
-                rationale="Dados insuficientes (captura muito curta)."))
+                rationale="Dados insuficientes (captura muito curta).",
+                confidence=0.0))
             continue
         score, factors = fn(f)
         level = _level(score)
@@ -273,8 +291,12 @@ def evaluate_conditions(f: BiomarkerFeatures) -> list[ConditionResult]:
             rationale = "Sustentado por: " + "; ".join(factors) + "."
         else:
             rationale = "Sem sinais relevantes nos biomarcadores observados."
+        conf = base_conf
+        if base_conf < 0.5:
+            rationale += " (confiança reduzida pela qualidade do sinal)"
         results.append(ConditionResult(key=key, name=name, score=score,
                                         level=level, factors=factors,
-                                        rationale=rationale))
-    results.sort(key=lambda r: r.score, reverse=True)
+                                        rationale=rationale, confidence=conf))
+    # Ordena por relevância clínica: score ponderado pela confiança.
+    results.sort(key=lambda r: r.score * (0.5 + 0.5 * r.confidence), reverse=True)
     return results

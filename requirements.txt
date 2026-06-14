@@ -7,8 +7,9 @@ opencv-python>=4.9
 # Versões >=0.10.15 removeram solutions em favor da Tasks API.
 mediapipe==0.10.14
 
-# Numérico / séries temporais
+# Numérico / séries temporais / processamento de sinal
 numpy>=1.26
+scipy>=1.11          # Welch PSD, Butterworth, filtros (precisão dos biomarcadores)
 dask[complete]>=2024.1
 
 # Backend de fallback do LLM (opcional — bitnet.cpp é o backend primário)

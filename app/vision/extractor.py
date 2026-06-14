@@ -15,6 +15,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from . import signal
 from .features import BiomarkerFeatures
 
 try:
@@ -83,6 +84,7 @@ class FeatureExtractor:
     # -- processamento por frame -------------------------------------------------
 
     def _process_frame(self, rgb) -> None:
+        self._series["lum"].append(float(rgb.mean()))   # luminância p/ qualidade
         face = self._mp_face.process(rgb)
         pose = self._mp_pose.process(rgb)
         hands = self._mp_hands.process(rgb)
@@ -174,8 +176,18 @@ class FeatureExtractor:
 
     def _aggregate(self, frames: int, duration_s: float) -> BiomarkerFeatures:
         fps = frames / duration_s
-        hand_hz, hand_amp = self._dominant_freq("hand_x", fps)
-        head_hz, _ = self._dominant_freq("body_x", fps)
+
+        # --- Pré-processamento avançado: Hampel (outliers) + One-Euro (jitter) ---
+        for key in ("hand_x", "hand_y", "body_x", "body_y", "gaze_x", "gaze_y"):
+            s = self._series.get(key)
+            if s and len(s) >= 8:
+                self._series[key] = list(signal.one_euro(signal.hampel(s), fps))
+
+        # --- Tremor por Welch na banda fisiológica 3–8 Hz (freq, amplitude, SNR) ---
+        hand_hz, hand_amp, hand_snr = signal.dominant_freq(
+            self._series.get("hand_x", []), fps, band=(3.0, 8.0))
+        head_hz, _, _ = signal.dominant_freq(
+            self._series.get("body_x", []), fps, band=(3.0, 8.0))
 
         ear = np.asarray(self._series.get("ear", []), dtype=float)
         blinks = int(np.sum(np.diff((ear < 0.18).astype(int)) == 1)) if ear.size else 0
@@ -188,6 +200,11 @@ class FeatureExtractor:
         gaze_disp, saccade_rate = self._gaze_metrics(fps, duration_s)
         micro_rate, micro_int = self._microexpression_metrics(fps, duration_s)
         gaze_center, expr_amp, periodicity, mouth_open = self._composite_metrics(fps)
+
+        # --- Qualidade do sinal: detecção de face × iluminação adequada ---
+        face_rate = (len(self._series.get("ear", [])) / frames) if frames else 0.0
+        bright_q = signal.quality_from_brightness(self._series.get("lum", []))
+        sig_quality = float(max(0.0, min(1.0, face_rate)) * bright_q)
 
         return BiomarkerFeatures(
             duration_s=duration_s,
@@ -208,6 +225,9 @@ class FeatureExtractor:
             expression_amplitude=expr_amp,
             movement_periodicity=periodicity,
             mouth_open_ratio=mouth_open,
+            signal_quality=sig_quality,
+            face_detection_rate=float(max(0.0, min(1.0, face_rate))),
+            tremor_snr=hand_snr,
             time_series={k: list(v) for k, v in self._series.items()},
         )
 

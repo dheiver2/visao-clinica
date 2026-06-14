@@ -81,6 +81,18 @@ indicadores compostos para os transtornos-alvo:
 Mais 8 indicadores de base (tremor, paralisia facial, oculomotor, piscar,
 sonolência, estresse, hipomimia, discinesia).
 
+### Técnicas avançadas de precisão (`app/vision/signal.py`)
+
+- **One-Euro filter** — suavização adaptativa dos landmarks (reduz jitter sem
+  atrasar movimentos rápidos como saccades/tremor).
+- **Hampel** — rejeição robusta de outliers (picos espúrios de detecção).
+- **Butterworth bandpass + Welch PSD** — estimativa espectral robusta da frequência
+  de tremor na banda fisiológica 3–8 Hz, com **SNR** que separa tremor real de ruído.
+- **SNR-gate** — oscilação só conta como tremor se o pico se destacar do ruído.
+- **Gating de qualidade** — detecção de face × iluminação → `signal_quality`.
+- **Confiança por condição** — cada indicador reporta uma confiança derivada da
+  qualidade do sinal e da quantidade de dados; a ordenação pondera score × confiança.
+
 > **Limitações importantes:** são indicadores probabilísticos de **triagem/pesquisa**,
 > com limiares **heurísticos não calibrados** em dataset clínico. Síndrome de Down e
 > autismo dependem de avaliação especializada (morfologia craniofacial, genética,

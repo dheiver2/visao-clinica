@@ -18,6 +18,11 @@ class BiomarkerFeatures:
     frames: int = 0
     fps: float = 0.0
 
+    # Qualidade do sinal (gating de precisão)
+    signal_quality: float = 1.0      # 0..1: detecção de face × iluminação adequada
+    face_detection_rate: float = 1.0 # fração de frames com face detectada
+    tremor_snr: float = 0.0          # relação sinal-ruído do pico de tremor (Welch)
+
     # Tremores (mãos/cabeça) — frequência dominante e amplitude
     tremor_hand_hz: float = 0.0
     tremor_hand_amplitude: float = 0.0

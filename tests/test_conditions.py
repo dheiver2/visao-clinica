@@ -19,11 +19,26 @@ def test_insufficient_data_is_indeterminate():
 
 
 def test_parkinsonian_tremor_detected():
-    f = BiomarkerFeatures(frames=900, fps=30.0,
+    f = BiomarkerFeatures(frames=900, fps=30.0, tremor_snr=10.0,
                           tremor_hand_hz=5.0, tremor_hand_amplitude=0.025)
     res = {r.key: r for r in evaluate_conditions(f)}
     assert res["parkinsonian_tremor"].level in ("moderado", "alto")
     assert res["parkinsonian_tremor"].factors
+
+
+def test_tremor_rejected_when_low_snr():
+    # Mesma frequência/amplitude, mas SNR baixo (ruído) -> não conta como tremor.
+    f = BiomarkerFeatures(frames=900, fps=30.0, tremor_snr=1.0,
+                          tremor_hand_hz=5.0, tremor_hand_amplitude=0.025)
+    res = {r.key: r for r in evaluate_conditions(f)}
+    assert res["parkinsonian_tremor"].level == "baixo"
+
+
+def test_low_signal_quality_reduces_confidence():
+    f = BiomarkerFeatures(frames=900, fps=30.0, facial_asymmetry=0.4,
+                          signal_quality=0.2)
+    res = {r.key: r for r in evaluate_conditions(f)}
+    assert res["facial_palsy"].confidence < 0.5
 
 
 def test_facial_palsy_detected():
@@ -55,7 +70,7 @@ def test_autism_signs_detected():
 
 
 def test_parkinson_composite_detected():
-    f = BiomarkerFeatures(frames=900, fps=30.0, tremor_hand_hz=5.0,
+    f = BiomarkerFeatures(frames=900, fps=30.0, tremor_hand_hz=5.0, tremor_snr=10.0,
                           tremor_hand_amplitude=0.025, microexpression_rate=1.0,
                           blink_rate_per_min=6.0, body_movement_index=0.005)
     res = {r.key: r for r in evaluate_conditions(f)}
