@@ -3,259 +3,365 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Visão Clínica — Triagem por IA Local</title>
-<meta name="description" content="Triagem por visão computacional e IA local (BitNet b1.58 2B4T). 100% offline, privado. Indicadores de autismo, Parkinson, Alzheimer e Síndrome de Down.">
+<title>Visão Clínica — Triagem por IA Local | Autismo, Parkinson, Alzheimer</title>
+<meta name="description" content="Software de triagem por visão computacional e IA local (BitNet b1.58 2B4T). 100% offline e privado. Indicadores de autismo, Parkinson, Alzheimer e Síndrome de Down em segundos.">
+<meta property="og:title" content="Visão Clínica — Triagem por IA Local">
+<meta property="og:description" content="Triagem por visão computacional e IA local. 100% offline. Autismo, Parkinson, Alzheimer, Down.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/face_mesh.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230a0b0e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%234c8dff' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%233ecf8e'/%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#0a0b0e; --panel:#14161b; --panel2:#1b1e25; --border:#2a2e37;
-    --text:#e6e8ec; --muted:#8b909b; --accent:#4c8dff;
+    --bg:#08090c; --panel:#14161b; --panel2:#1b1e25; --border:#262a33;
+    --text:#e9ebef; --muted:#8b909b; --accent:#4c8dff; --accent2:#6f6bff;
     --alto:#ff5c5c; --moderado:#ffb020; --baixo:#3ecf8e;
+    --maxw:1120px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);
-    color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--accent);text-decoration:none}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-  .section{padding:64px 0;border-top:1px solid var(--border)}
-  h1{font-size:44px;font-weight:700;letter-spacing:-1px;line-height:1.1}
-  h2{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--accent);
-    text-transform:uppercase;margin-bottom:18px}
-  h3{font-size:22px;font-weight:600;margin-bottom:10px}
-  p{color:var(--muted)}
-  .lead{font-size:19px;color:var(--text);max-width:680px}
+  html{scroll-behavior:smooth}
+  body{font-family:"Inter",-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);
+    color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  h1,h2,h3{letter-spacing:-.5px}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:2.5px;color:var(--accent);text-transform:uppercase}
+  .muted{color:var(--muted)}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+    background:rgba(8,9,12,.72);border-bottom:1px solid var(--border)}
+  nav .wrap{display:flex;align-items:center;gap:28px;height:62px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+  .logo .dot{width:24px;height:24px;border-radius:7px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center}
+  .logo .dot:after{content:"";width:8px;height:8px;border-radius:50%;background:#3ecf8e}
+  .navlinks{display:flex;gap:24px;margin-left:auto;font-size:14px}
+  .navlinks a{color:var(--muted);transition:color .2s}
+  .navlinks a:hover{color:var(--text)}
+  .btn{display:inline-block;border-radius:10px;padding:11px 20px;font-weight:600;font-size:14px;
+    transition:transform .15s,box-shadow .2s,background .2s;cursor:pointer}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    box-shadow:0 6px 22px rgba(76,141,255,.35)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(76,141,255,.5)}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn.ghost:hover{background:var(--panel2)}
+  @media(max-width:760px){.navlinks{display:none}}
 
   /* hero */
-  .hero{padding:84px 0 64px;text-align:center;
-    background:radial-gradient(900px 400px at 50% -10%,rgba(76,141,255,.18),transparent)}
-  .badge{display:inline-block;background:var(--panel2);border:1px solid var(--border);
-    border-radius:999px;padding:6px 16px;font-size:12px;color:var(--muted);margin-bottom:24px}
-  .cta{display:inline-flex;gap:14px;margin-top:32px;flex-wrap:wrap;justify-content:center}
-  .btn{background:var(--accent);color:#fff;border-radius:10px;padding:13px 26px;
-    font-weight:600;font-size:15px}
-  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .hero{position:relative;padding:90px 0 70px;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;z-index:-1;
+    background:radial-gradient(700px 360px at 15% 0%,rgba(76,141,255,.20),transparent),
+              radial-gradient(620px 360px at 100% 20%,rgba(111,107,255,.16),transparent)}
+  .hero .grid{display:grid;grid-template-columns:1.05fr 1fr;gap:50px;align-items:center}
+  .hero h1{font-size:50px;font-weight:800;line-height:1.05;margin:18px 0}
+  .hero h1 .grad{background:linear-gradient(120deg,#9cc0ff,#6f6bff 60%,#3ecf8e);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.lead{font-size:18px;color:#c3c7d0;max-width:560px}
+  .hero .cta{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap}
+  .pillrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+  .chip{font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--border);
+    border-radius:999px;padding:6px 13px}
+  /* browser mockup */
+  .mock{border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);background:var(--panel)}
+  .mock .bar{display:flex;gap:7px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)}
+  .mock .bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .mock .bar .u{margin-left:14px;font-size:11px;color:var(--muted)}
+  .mock img{display:block;width:100%}
+  @media(max-width:860px){.hero .grid{grid-template-columns:1fr;gap:34px}.hero h1{font-size:38px}}
 
-  .grid{display:grid;gap:18px}
-  .g3{grid-template-columns:repeat(3,1fr)}
-  .g2{grid-template-columns:repeat(2,1fr)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px}
-  .card .ico{font-size:24px;margin-bottom:10px}
-  .card h3{font-size:17px}
-  .card p{font-size:14px}
+  /* stats */
+  .stats{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#0b0d11}
+  .stats .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:34px 24px}
+  .stat .n{font-size:34px;font-weight:800;
+    background:linear-gradient(120deg,#9cc0ff,#3ecf8e);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .l{font-size:13px;color:var(--muted)}
+  @media(max-width:640px){.stats .wrap{grid-template-columns:repeat(2,1fr)}}
 
-  .shot{width:100%;border:1px solid var(--border);border-radius:14px;display:block;
+  /* sections */
+  section{padding:80px 0}
+  .center{text-align:center;max-width:680px;margin:0 auto 44px}
+  .center h2{font-size:32px;font-weight:800;margin-top:10px}
+  .center p{color:var(--muted);font-size:17px;margin-top:12px}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;align-items:center}
+  @media(max-width:820px){.grid3,.grid2{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;
+    transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-4px);border-color:#3a4150;box-shadow:0 16px 40px rgba(0,0,0,.4)}
+  .card .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:14px;
+    background:rgba(76,141,255,.12);border:1px solid rgba(76,141,255,.25)}
+  .card .ic svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.8}
+  .card h3{font-size:18px;margin-bottom:6px}
+  .card p{font-size:14px;color:var(--muted)}
+
+  .shot{width:100%;border:1px solid var(--border);border-radius:16px;display:block;
     box-shadow:0 24px 60px rgba(0,0,0,.5)}
-  .shot-cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px}
+  .cap{font-size:13px;color:var(--muted);text-align:center;margin-top:14px}
 
   table{width:100%;border-collapse:collapse;font-size:14px}
-  td,th{padding:11px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
-  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:1px}
-  .pill{display:inline-block;border-radius:8px;padding:2px 9px;font-size:11px;font-weight:700;color:#0a0b0e}
+  td,th{padding:13px 14px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+  tr{transition:background .15s}tbody tr:hover{background:var(--panel)}
+  .pill{display:inline-block;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;color:#08090c}
   .pill.a{background:var(--alto)}.pill.m{background:var(--moderado)}.pill.b{background:var(--baixo)}
 
-  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;text-align:center}
-  .steps .s{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 10px}
-  .steps .n{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
-    display:flex;align-items:center;justify-content:center;font-weight:700;margin:0 auto 10px;font-size:13px}
-  .steps .s p{font-size:12px}
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;position:relative}
+  .steps .s{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px 14px;text-align:center}
+  .steps .n{width:32px;height:32px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+    display:grid;place-items:center;font-weight:700;margin:0 auto 12px;font-size:14px}
+  .steps .s strong{font-size:14px}.steps .s p{font-size:12px;color:var(--muted);margin-top:4px}
+  @media(max-width:820px){.steps{grid-template-columns:1fr 1fr}}
 
-  .disc{background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.35);border-radius:14px;
-    padding:20px 24px;color:#ffb3b3;font-size:14px}
-  footer{padding:40px 0;color:var(--muted);font-size:13px;text-align:center}
-  .ref{font-size:13px;color:var(--muted)}
-  .ref li{margin:6px 0;list-style:none;padding-left:16px;position:relative}
-  .ref li:before{content:"▸";position:absolute;left:0;color:var(--accent)}
-  @media(max-width:760px){.g3,.g2,.steps{grid-template-columns:1fr}h1{font-size:32px}}
-  .scene{width:100%;border:1px solid var(--border);border-radius:14px;background:var(--panel);
+  .persona{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:26px;text-align:center}
+  .persona img{width:118px;height:118px;border-radius:50%;margin-bottom:12px;object-fit:cover}
+  .persona h3{font-size:17px}.persona p{font-size:13px;color:var(--muted);margin-top:6px}
+
+  .gif-frame{max-width:430px;margin:0 auto;border:1px solid var(--border);border-radius:16px;overflow:hidden;
     box-shadow:0 24px 60px rgba(0,0,0,.5)}
-  .persona{background:var(--panel);border:1px solid var(--border);border-radius:14px;
-    padding:22px;text-align:center}
-  .persona svg{width:96px;height:96px;margin-bottom:8px}
-  .persona img{width:120px;height:120px;border-radius:50%;margin-bottom:10px}
-  .persona h3{font-size:16px}.persona p{font-size:13px}
+  .gif-frame img{display:block;width:100%}
+
+  .cta-band{background:linear-gradient(135deg,rgba(76,141,255,.14),rgba(111,107,255,.12));
+    border:1px solid var(--border);border-radius:22px;padding:48px;text-align:center}
+  .cta-band h2{font-size:30px;font-weight:800}
+  .cta-band p{color:var(--muted);margin:12px auto 26px;max-width:520px}
+
+  .disc{background:rgba(255,92,92,.07);border:1px solid rgba(255,92,92,.3);border-radius:14px;
+    padding:20px 24px;color:#ffb3b3;font-size:13.5px}
+
+  footer{border-top:1px solid var(--border);padding:46px 0;margin-top:80px}
+  footer .cols{display:grid;grid-template-columns:2fr 1fr 1fr;gap:30px}
+  footer h4{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+  footer a{color:var(--muted);font-size:14px;display:block;margin:7px 0;transition:color .2s}
+  footer a:hover{color:var(--text)}
+  footer .copy{color:var(--muted);font-size:13px;margin-top:30px;border-top:1px solid var(--border);padding-top:22px}
+  @media(max-width:760px){footer .cols{grid-template-columns:1fr}}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
 </style>
 </head>
 <body>
 
-<header class="hero">
+<nav>
   <div class="wrap">
-    <span class="badge">🔒 100% local & offline · privacidade dos dados médicos</span>
-    <h1>Visão Clínica</h1>
-    <p class="lead" style="margin:18px auto 0">Triagem por <strong>visão computacional</strong> e
-      <strong>IA local (BitNet b1.58 2B4T)</strong>. A partir de uma webcam, extrai biomarcadores
-      faciais, oculares e motores e gera indicadores probabilísticos de triagem — em segundos,
-      sem enviar nenhum dado para a nuvem.</p>
-    <div class="cta">
-      <a class="btn" href="#indicadores">Ver indicadores</a>
-      <a class="btn ghost" href="https://github.com/dheiver2/visao-clinica">Repositório</a>
+    <a class="logo" href="#"><span class="dot"></span> Visão Clínica</a>
+    <div class="navlinks">
+      <a href="#produto">Produto</a>
+      <a href="#indicadores">Indicadores</a>
+      <a href="#como">Como funciona</a>
+      <a href="#tecnologia">Tecnologia</a>
+    </div>
+    <a class="btn primary" href="#contato" style="margin-left:auto">Solicitar demonstração</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap grid">
+    <div>
+      <span class="eyebrow">Triagem clínica · IA local</span>
+      <h1>Biomarcadores faciais em <span class="grad">segundos</span>, direto da webcam.</h1>
+      <p class="lead">Visão computacional + IA local (BitNet b1.58 2B4T) extraem tremor,
+        microexpressões, rastreio ocular e sinais vitais sem contato — e geram indicadores
+        probabilísticos de triagem. <strong>100% offline</strong>, sem enviar nada para a nuvem.</p>
+      <div class="cta">
+        <a class="btn primary" href="#contato">Solicitar demonstração</a>
+        <a class="btn ghost" href="#indicadores">Ver indicadores</a>
+      </div>
+      <div class="pillrow">
+        <span class="chip">🔒 100% local & offline</span>
+        <span class="chip">🧠 BitNet b1.58 2B4T</span>
+        <span class="chip">🎯 478 landmarks</span>
+      </div>
+    </div>
+    <div class="mock reveal">
+      <div class="bar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i>
+        <span class="u">visao-clinica · captura ao vivo</span></div>
+      <img src="assets/app.png?v=6" alt="Tela do software Visão Clínica analisando um rosto real">
     </div>
   </div>
 </header>
 
-<section class="section">
+<div class="stats">
   <div class="wrap">
-    <img class="shot" src="assets/app.png?v=5" alt="Tela do software Visão Clínica">
-    <div class="shot-cap">Interface do software — captura ao vivo à esquerda, indicadores clínicos por condição à direita.</div>
+    <div class="stat"><div class="n" data-count="12">12</div><div class="l">indicadores clínicos</div></div>
+    <div class="stat"><div class="n" data-count="478">478</div><div class="l">landmarks faciais</div></div>
+    <div class="stat"><div class="n" data-suffix="%" data-count="100">100%</div><div class="l">local e offline</div></div>
+    <div class="stat"><div class="n" data-count="39">39</div><div class="l">testes automatizados</div></div>
+  </div>
+</div>
+
+<section id="produto">
+  <div class="wrap">
+    <div class="center reveal">
+      <span class="eyebrow">Em ação</span>
+      <h2>Pessoas reais, análise em tempo real</h2>
+      <p>A malha de 478 pontos é rastreada na face e os indicadores são calculados na hora,
+        com leitura de frequência cardíaca sem contato (rPPG).</p>
+    </div>
+    <img class="shot reveal" src="assets/face_mesh.png?v=6" alt="Rosto real analisado pelo software com a malha de landmarks">
+    <div class="gif-frame reveal" style="margin-top:40px">
+      <img src="assets/face_scan.gif?v=6" alt="Animação da malha rastreando o rosto">
+    </div>
+    <div class="cap">Rastreamento facial em tempo real durante a captura de 12 segundos.</div>
   </div>
 </section>
 
-<section class="section">
+<section style="background:#0b0d11;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="wrap">
-    <h2>Pessoas usando na prática</h2>
-    <img class="shot" src="assets/face_mesh.png?v=5" alt="Rosto de uma pessoa sendo analisado pelo software com a malha de landmarks">
-    <div class="shot-cap" style="margin-bottom:36px">Rosto analisado em tempo real — a malha de 478 pontos (landmarks) é rastreada na face e o painel calcula os indicadores clínicos com leitura de sinais vitais sem contato (rPPG).</div>
-    <div style="text-align:center;margin-bottom:36px">
-      <img src="assets/face_scan.gif?v=5" alt="Animação da malha de landmarks rastreando o rosto" style="max-width:420px;width:100%;border:1px solid var(--border);border-radius:14px">
-      <div class="shot-cap">Rastreamento em tempo real da malha facial durante a captura.</div>
+    <div class="center reveal"><span class="eyebrow">Cobertura</span>
+      <h2>Funciona para diferentes pessoas</h2>
+      <p>O rastreamento se ajusta a diferentes tons de pele, idades e características.</p></div>
+    <div class="grid3">
+      <img class="shot reveal" src="assets/real_var1.png?v=6" alt="Rosto analisado — exemplo 1">
+      <img class="shot reveal" src="assets/real_var2.png?v=6" alt="Rosto analisado — exemplo 2">
+      <img class="shot reveal" src="assets/real_var3.png?v=6" alt="Rosto analisado — exemplo 3">
     </div>
   </div>
 </section>
 
-<section class="section">
+<section>
   <div class="wrap">
-    <h2>Funciona para diferentes pessoas</h2>
-    <p class="lead" style="margin-bottom:24px">O rastreamento facial opera com diferentes
-      tons de pele, idades e características — a malha de landmarks se ajusta a cada rosto.</p>
-    <div class="grid g3">
-      <div><img class="shot" src="assets/real_var1.png?v=5" alt="Rosto analisado — exemplo 1"></div>
-      <div><img class="shot" src="assets/real_var2.png?v=5" alt="Rosto analisado — exemplo 2"></div>
-      <div><img class="shot" src="assets/real_var3.png?v=5" alt="Rosto analisado — exemplo 3"></div>
+    <div class="center reveal"><span class="eyebrow">Recursos</span>
+      <h2>O que o software entrega</h2></div>
+    <div class="grid3">
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>Captura por webcam</h3><p>OpenCV + MediaPipe extraem tremor, microexpressões, rastreio ocular, simetria facial e movimento corporal.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 1 4 4 4 4 0 0 1 0 8 4 4 0 0 1-8 0 4 4 0 0 1 0-8 4 4 0 0 1 4-4z"/></svg></div>
+        <h3>IA local nativa</h3><p>O BitNet b1.58 2B4T roda na própria máquina, sem APIs externas, para correlacionar achados e gerar relatórios.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg></div>
+        <h3>Resultado instantâneo</h3><p>Indicadores clínicos determinísticos em milissegundos; a narrativa da IA é opcional, em segundo plano.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <h3>Acurácia controlada</h3><p>Cada indicador reporta uma confiança; só os de acurácia média/alta são exibidos. Captura ruim aciona aviso.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg></div>
+        <h3>Relatórios PDF & CSV</h3><p>Exportação técnica, persistência local em SQLite e modos Pesquisa e Triagem.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/></svg></div>
+        <h3>Privacidade por design</h3><p>Nenhum dado sai do computador. Sem dependência de serviços externos — ideal para sigilo médico.</p></div>
     </div>
   </div>
 </section>
 
-<section class="section">
-  <div class="wrap">
-    <h2>Para quem é</h2>
-    <div class="grid g3">
-      <div class="persona">
-        <img src="assets/persona1.png?v=5" alt="Profissional de saúde">
-        <h3>Profissional de saúde</h3>
-        <p>Triagem rápida de pacientes, com indicadores de risco e relatório em PDF.</p>
-      </div>
-      <div class="persona">
-        <img src="assets/persona2.png?v=5" alt="Pesquisador(a)">
-        <h3>Pesquisador(a)</h3>
-        <p>Acesso a todas as métricas e biomarcadores, exportação em CSV para análise.</p>
-      </div>
-      <div class="persona">
-        <img src="assets/persona3.png?v=5" alt="Pessoa em triagem">
-        <h3>Pessoa em triagem</h3>
-        <p>Interface simplificada: basta olhar para a câmera e receber um indicador de risco.</p>
-      </div>
+<section id="indicadores" style="background:#0b0d11;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="wrap grid2">
+    <div class="reveal">
+      <span class="eyebrow">Painel clínico</span>
+      <h2 style="font-size:30px;font-weight:800;margin:10px 0 18px">12 indicadores de triagem</h2>
+      <table>
+        <tr><th>Condição rastreada</th><th>Exemplo</th></tr>
+        <tr><td>Sinais compatíveis com <strong>TEA (autismo)</strong></td><td><span class="pill a">alto</span></td></tr>
+        <tr><td><strong>Perfil parkinsoniano</strong></td><td><span class="pill m">moderado</span></td></tr>
+        <tr><td>Sinais tipo <strong>Alzheimer</strong></td><td><span class="pill a">alto</span></td></tr>
+        <tr><td>Sinais de <strong>Síndrome de Down</strong></td><td><span class="pill m">moderado</span></td></tr>
+        <tr><td>Tremor · Paralisia facial · Oculomotor</td><td><span class="pill b">base</span></td></tr>
+        <tr><td>Piscar · Sonolência · Estresse · Discinesia</td><td><span class="pill b">base</span></td></tr>
+      </table>
     </div>
+    <div class="reveal"><img class="shot" src="assets/panel.png?v=6" alt="Painel de indicadores clínicos"></div>
   </div>
 </section>
 
-<section class="section">
+<section id="como">
   <div class="wrap">
-    <h2>O que entrega</h2>
-    <div class="grid g3">
-      <div class="card"><div class="ico">🎥</div><h3>Captura por webcam</h3>
-        <p>OpenCV + MediaPipe (Face Mesh, Pose, Hands) extraem tremor, microexpressões,
-          rastreio ocular, simetria facial e movimento corporal.</p></div>
-      <div class="card"><div class="ico">🧠</div><h3>IA local nativa</h3>
-        <p>BitNet b1.58 2B4T roda na própria máquina (sem APIs externas) para correlacionar
-          os achados e gerar relatórios técnicos.</p></div>
-      <div class="card"><div class="ico">⚡</div><h3>Resultado instantâneo</h3>
-        <p>Indicadores clínicos determinísticos em milissegundos; a narrativa da IA é opcional
-          e roda em segundo plano.</p></div>
-      <div class="card"><div class="ico">🎯</div><h3>Acurácia controlada</h3>
-        <p>Cada indicador reporta uma confiança; só são exibidos os de acurácia média/alta.
-          Captura ruim aciona um aviso para refazer.</p></div>
-      <div class="card"><div class="ico">📄</div><h3>Relatórios</h3>
-        <p>Exportação em PDF e CSV, persistência local em SQLite, modos Pesquisa e Triagem.</p></div>
-      <div class="card"><div class="ico">🔬</div><h3>Base científica</h3>
-        <p>Técnicas fundamentadas em revistas de alto impacto (IEEE TBME, Nature Reviews
-          Neurology, J. Neuroscience Methods).</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="indicadores">
-  <div class="wrap">
-    <h2>Indicadores clínicos de triagem</h2>
-    <div class="grid g2" style="align-items:start">
-      <div>
-        <table>
-          <tr><th>Condição rastreada</th><th>Faixa</th></tr>
-          <tr><td>Sinais compatíveis com <strong>TEA (autismo)</strong></td><td><span class="pill a">alto</span></td></tr>
-          <tr><td><strong>Perfil parkinsoniano</strong> (tremor, hipomimia, bradicinesia)</td><td><span class="pill m">moderado</span></td></tr>
-          <tr><td>Sinais tipo <strong>Alzheimer</strong> (oculomotor / cognitivo)</td><td><span class="pill a">alto</span></td></tr>
-          <tr><td>Sinais compatíveis com <strong>Síndrome de Down</strong></td><td><span class="pill m">moderado</span></td></tr>
-          <tr><td>Tremor parkinsoniano · Paralisia facial · Disfunção oculomotora</td><td><span class="pill b">base</span></td></tr>
-          <tr><td>Piscar · Sonolência · Estresse · Hipomimia · Discinesia</td><td><span class="pill b">base</span></td></tr>
-        </table>
-        <p style="margin-top:16px;font-size:13px">12 indicadores no total, cada um com score, nível
-          de risco, fatores e confiança.</p>
-      </div>
-      <div>
-        <img class="shot" src="assets/panel.png?v=5" alt="Painel de indicadores clínicos">
-        <div class="shot-cap">Painel clínico — cada card mostra nível de risco, score e acurácia.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <h2>Como funciona</h2>
+    <div class="center reveal"><span class="eyebrow">Pipeline</span><h2>Como funciona</h2></div>
     <div class="steps">
-      <div class="s"><div class="n">1</div><strong>Webcam</strong><p>captura de 12s</p></div>
-      <div class="s"><div class="n">2</div><strong>Visão computacional</strong><p>MediaPipe extrai biomarcadores</p></div>
-      <div class="s"><div class="n">3</div><strong>Processamento de sinal</strong><p>filtros, Welch/SNR, qualidade</p></div>
-      <div class="s"><div class="n">4</div><strong>Motor clínico</strong><p>indicadores + confiança</p></div>
-      <div class="s"><div class="n">5</div><strong>BitNet local</strong><p>narrativa + relatório</p></div>
+      <div class="s reveal"><div class="n">1</div><strong>Webcam</strong><p>captura de 12s</p></div>
+      <div class="s reveal"><div class="n">2</div><strong>Visão computacional</strong><p>MediaPipe extrai biomarcadores</p></div>
+      <div class="s reveal"><div class="n">3</div><strong>Processamento de sinal</strong><p>filtros, Welch/SNR, qualidade</p></div>
+      <div class="s reveal"><div class="n">4</div><strong>Motor clínico</strong><p>indicadores + confiança</p></div>
+      <div class="s reveal"><div class="n">5</div><strong>BitNet local</strong><p>narrativa + relatório</p></div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<section style="background:#0b0d11;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="wrap">
-    <h2>Técnicas avançadas (literatura)</h2>
-    <div class="grid g2">
-      <div class="card"><h3>rPPG — sinais vitais sem contato</h3>
-        <p>Frequência cardíaca e variabilidade (VFC) a partir da cor da pele.
-          <span class="ref">Wang et al., IEEE TBME 2017; Poh et al., Optics Express 2010.</span></p></div>
-      <div class="card"><h3>Métricas oculomotoras</h3>
-        <p>Estabilidade de fixação (BCEA) e main-sequence de saccades.
-          <span class="ref">Anderson &amp; MacAskill, Nat. Rev. Neurol. 2013; Bahill et al. 1975.</span></p></div>
-      <div class="card"><h3>Hipomimia facial (FACS)</h3>
-        <p>Redução da dinâmica das Action Units (bradicinesia facial).
-          <span class="ref">Bandini et al., J. Neurosci. Methods 2017; Ekman FACS.</span></p></div>
-      <div class="card"><h3>Estereotipias motoras</h3>
-        <p>Detecção de movimento repetitivo por autocorrelação.
-          <span class="ref">Goodwin et al., J. Autism Dev. Disord. 2011.</span></p></div>
+    <div class="center reveal"><span class="eyebrow">Para quem é</span><h2>Pensado para a prática clínica</h2></div>
+    <div class="grid3">
+      <div class="persona reveal"><img src="assets/persona1.png?v=6" alt="Profissional de saúde">
+        <h3>Profissional de saúde</h3><p>Triagem rápida de pacientes, com indicadores de risco e relatório em PDF.</p></div>
+      <div class="persona reveal"><img src="assets/persona2.png?v=6" alt="Pesquisador(a)">
+        <h3>Pesquisador(a)</h3><p>Acesso a todas as métricas e biomarcadores, exportação em CSV.</p></div>
+      <div class="persona reveal"><img src="assets/persona3.png?v=6" alt="Pessoa em triagem">
+        <h3>Pessoa em triagem</h3><p>Interface simplificada: basta olhar para a câmera e receber um indicador.</p></div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<section id="tecnologia">
   <div class="wrap">
-    <h2>Privacidade por design</h2>
-    <p class="lead">Todo o processamento — imagem, vídeo, biomarcadores e a IA — ocorre
-      <strong>na própria máquina</strong>. Nenhum dado sai do computador, sem dependência de
-      serviços externos. Ideal para o sigilo de dados de saúde.</p>
+    <div class="center reveal"><span class="eyebrow">Base científica</span>
+      <h2>Técnicas validadas em literatura de alto impacto</h2></div>
+    <div class="grid2" style="align-items:stretch">
+      <div class="card reveal"><h3>rPPG — sinais vitais sem contato</h3>
+        <p>Frequência cardíaca e variabilidade (VFC) pela cor da pele. <em>Wang et al., IEEE TBME 2017; Poh et al., Optics Express 2010.</em></p></div>
+      <div class="card reveal"><h3>Métricas oculomotoras</h3>
+        <p>Estabilidade de fixação (BCEA) e main-sequence de saccades. <em>Anderson &amp; MacAskill, Nat. Rev. Neurol. 2013.</em></p></div>
+      <div class="card reveal"><h3>Hipomimia facial (FACS)</h3>
+        <p>Redução da dinâmica das Action Units. <em>Bandini et al., J. Neurosci. Methods 2017; Ekman FACS.</em></p></div>
+      <div class="card reveal"><h3>Estereotipias motoras</h3>
+        <p>Movimento repetitivo por autocorrelação. <em>Goodwin et al., J. Autism Dev. Disord. 2011.</em></p></div>
+    </div>
   </div>
 </section>
 
-<section class="section">
+<section id="contato">
   <div class="wrap">
-    <div class="disc">
-      <strong>Aviso científico.</strong> O software representa uma ferramenta de
-      <strong>triagem e apoio à pesquisa</strong>. Os resultados <strong>não constituem
-      diagnóstico médico</strong> e <strong>não substituem</strong> a avaliação de profissionais
-      de saúde especializados. Os limiares são baseados em literatura, porém ainda não calibrados
-      com dataset clínico; condições como Síndrome de Down e autismo exigem avaliação especializada.
+    <div class="cta-band reveal">
+      <h2>Quer ver funcionando?</h2>
+      <p>Agende uma demonstração do Visão Clínica e veja a triagem por IA local em tempo real.</p>
+      <a class="btn primary" href="mailto:dheiver.santos@gmail.com?subject=Demonstração%20Visão%20Clínica">Solicitar demonstração</a>
+      <a class="btn ghost" href="https://github.com/dheiver2/visao-clinica" style="margin-left:10px">Repositório</a>
+    </div>
+    <div class="disc reveal" style="margin-top:34px">
+      <strong>Aviso científico.</strong> Ferramenta de <strong>triagem e apoio à pesquisa</strong>.
+      Os resultados <strong>não constituem diagnóstico médico</strong> e não substituem a avaliação de
+      profissionais de saúde. Os limiares baseiam-se em literatura, porém ainda não foram calibrados com
+      dataset clínico; condições como Síndrome de Down e autismo exigem avaliação especializada.
+      As fotos exibidas são de rostos gerados por IA (pessoas inexistentes), processados pelo MediaPipe.
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    Visão Clínica · IA local com BitNet b1.58 2B4T ·
-    <a href="https://github.com/dheiver2/visao-clinica">github.com/dheiver2/visao-clinica</a>
+    <div class="cols">
+      <div>
+        <a class="logo" href="#"><span class="dot"></span> Visão Clínica</a>
+        <p class="muted" style="font-size:14px;margin-top:12px;max-width:320px">Triagem por visão
+          computacional e IA local nativa (BitNet b1.58 2B4T). 100% offline e privado.</p>
+      </div>
+      <div><h4>Produto</h4>
+        <a href="#produto">Em ação</a><a href="#indicadores">Indicadores</a><a href="#como">Como funciona</a></div>
+      <div><h4>Recursos</h4>
+        <a href="#tecnologia">Tecnologia</a>
+        <a href="https://github.com/dheiver2/visao-clinica">Repositório</a>
+        <a href="mailto:dheiver.santos@gmail.com">Contato</a></div>
+    </div>
+    <div class="copy">© <span id="yr"></span> Visão Clínica · Ferramenta de triagem e apoio à pesquisa — não constitui diagnóstico médico.</div>
   </div>
 </footer>
 
+<script>
+  // ano
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // scroll reveal
+  const io = new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.14});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  // contadores
+  const fmt=n=>n.toLocaleString('pt-BR');
+  const cio=new IntersectionObserver((es)=>es.forEach(e=>{
+    if(!e.isIntersecting)return; const el=e.target; cio.unobserve(el);
+    const end=+el.dataset.count, suf=el.dataset.suffix||''; let t0=null;
+    const step=ts=>{if(!t0)t0=ts; const p=Math.min((ts-t0)/1100,1);
+      el.textContent=fmt(Math.floor(p*end))+suf; if(p<1)requestAnimationFrame(step);};
+    requestAnimationFrame(step);
+  }),{threshold:.5});
+  document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+</script>
 </body>
 </html>
