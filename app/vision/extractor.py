@@ -33,6 +33,7 @@ class FeatureExtractor:
         self.camera_index = camera_index
         self._series: dict[str, list[float]] = defaultdict(list)
         self._face_lm = None
+        self._last_face = None
         if _MEDIAPIPE_OK:
             self._mp_face = mp.solutions.face_mesh.FaceMesh(
                 refine_landmarks=True, max_num_faces=1)
@@ -83,7 +84,7 @@ class FeatureExtractor:
                 self._process_frame(rgb)
                 frames += 1
                 if on_frame is not None:
-                    on_frame(rgb, elapsed, duration_s)
+                    on_frame(self._draw_overlay(rgb), elapsed, duration_s)
         finally:
             cap.release()
 
@@ -92,9 +93,33 @@ class FeatureExtractor:
 
     # -- processamento por frame -------------------------------------------------
 
+    def _draw_overlay(self, rgb):
+        """Desenha a malha de landmarks (tesselação) e a bounding box sobre o frame,
+        para o preview ao vivo mostrar a análise acontecendo no usuário."""
+        if not _MEDIAPIPE_OK or self._last_face is None:
+            return rgb
+        out = rgb.copy()
+        h, w = out.shape[:2]
+        mp.solutions.drawing_utils.draw_landmarks(
+            image=out,
+            landmark_list=self._last_face,
+            connections=mp.solutions.face_mesh.FACEMESH_TESSELATION,
+            landmark_drawing_spec=None,
+            connection_drawing_spec=mp.solutions.drawing_utils.DrawingSpec(
+                color=(120, 230, 100), thickness=1))
+        xs = [p.x for p in self._last_face.landmark]
+        ys = [p.y for p in self._last_face.landmark]
+        x0, y0 = int(min(xs) * w), int(min(ys) * h)
+        x1, y1 = int(max(xs) * w), int(max(ys) * h)
+        cv2.rectangle(out, (x0, y0), (x1, y1), (76, 141, 255), 2)
+        cv2.putText(out, "ROSTO DETECTADO", (x0, max(y0 - 8, 12)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (76, 141, 255), 1, cv2.LINE_AA)
+        return out
+
     def _process_frame(self, rgb) -> None:
         self._series["lum"].append(float(rgb.mean()))   # luminância p/ qualidade
         face = self._mp_face.process(rgb)
+        self._last_face = face.multi_face_landmarks[0] if face.multi_face_landmarks else None
         pose = self._mp_pose.process(rgb)
         hands = self._mp_hands.process(rgb)
 
