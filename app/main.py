@@ -41,16 +41,25 @@ def run_cli(mode: str, duration: float, use_llm: bool = False) -> int:
         engine.load_model(progress=lambda m: print(f"  · {m}"))
         engine.enrich_with_llm(analysis, features)
 
+    from app.clinical.validation import accuracy_band, validate_session
+    val = validate_session(features)
     print(f"\nNível de risco global: {analysis.risk_level.upper()}")
     print(f"Qualidade do sinal: {features.signal_quality:.0%} "
           f"(face {features.face_detection_rate:.0%})")
-    print("\n--- Indicadores clínicos por condição ---")
-    for c in analysis.conditions:
-        marca = {"alto": "!!", "moderado": " ·", "baixo": "  ", "indeterminado": " ?"}
-        print(f" [{marca.get(c.level, '  ')}] {c.name}: {c.level} "
-              f"(score {c.score:.2f} · conf {c.confidence:.0%})")
-        if mode != "triagem" and c.factors:
-            print(f"        ↳ {c.rationale}")
+
+    displayable = analysis.displayable_conditions
+    if not val.ok or not displayable:
+        print("\n⚠ Acurácia insuficiente para exibir indicadores confiáveis:")
+        for m in (val.messages or ["Refaça a captura."]):
+            print(f"  • {m}")
+    else:
+        print("\n--- Indicadores clínicos (acurácia média/alta) ---")
+        for c in displayable:
+            marca = {"alto": "!!", "moderado": " ·", "baixo": "  "}
+            print(f" [{marca.get(c.level, '  ')}] {c.name}: {c.level} "
+                  f"(score {c.score:.2f} · acurácia {accuracy_band(c.confidence)})")
+            if mode != "triagem" and c.factors:
+                print(f"        ↳ {c.rationale}")
 
     if mode != "triagem":
         print("\n--- Biomarcadores ---")

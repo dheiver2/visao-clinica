@@ -30,9 +30,16 @@ class ClinicalAnalysis:
         return d
 
     @property
+    def displayable_conditions(self) -> list[ConditionResult]:
+        """Apenas indicadores com acurácia média ou alta (oculta baixa confiança)."""
+        from app.clinical.validation import is_displayable
+        return [c for c in self.conditions if is_displayable(c.confidence)]
+
+    @property
     def top_conditions(self) -> list[ConditionResult]:
-        """Condições com nível ao menos moderado, mais relevantes primeiro."""
-        return [c for c in self.conditions if c.level in ("moderado", "alto")]
+        """Condições exibíveis (acurácia média/alta) com nível ao menos moderado."""
+        return [c for c in self.displayable_conditions
+                if c.level in ("moderado", "alto")]
 
 
 _SYSTEM = (

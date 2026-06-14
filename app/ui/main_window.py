@@ -106,7 +106,9 @@ def _condition_card(cond, research: bool):
     lay.addWidget(bar_bg)
 
     if research:
-        info = QLabel(f"score {cond.score:.2f} · confiança {cond.confidence:.0%} — "
+        from app.clinical.validation import accuracy_band
+        acc = accuracy_band(cond.confidence)
+        info = QLabel(f"score {cond.score:.2f} · acurácia {acc} ({cond.confidence:.0%}) — "
                       f"{cond.rationale}")
         info.setStyleSheet(f"color:{theme.MUTED}; font-size:11px;")
         info.setWordWrap(True)
@@ -273,14 +275,27 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         overall.setText(f"Nível global: {analysis.risk_level.upper()}")
         overall.setStyleSheet(f"font-size:14px; font-weight:700; color:{color};")
 
+        from app.clinical.validation import validate_session
+        val = validate_session(features)
+
         clear_cards()
-        shown = analysis.conditions if research else analysis.top_conditions
-        if not shown:
+        # Só exibe indicadores com acurácia média/alta.
+        displayable = analysis.displayable_conditions
+        shown = displayable if research else [c for c in displayable
+                                             if c.level in ("moderado", "alto")]
+        if not val.ok or not analysis.displayable_conditions:
+            msg = QLabel("Acurácia insuficiente para exibir indicadores confiáveis.\n• "
+                         + "\n• ".join(val.messages or ["Refaça a captura."]))
+            msg.setWordWrap(True)
+            msg.setStyleSheet(f"color:{theme.LEVEL_COLOR['moderado']};")
+            cards_layout.insertWidget(0, msg)
+        elif not shown:
             empty = QLabel("Nenhum indicador relevante (modo triagem).")
             empty.setStyleSheet(f"color:{theme.MUTED};")
             cards_layout.insertWidget(0, empty)
-        for i, cond in enumerate(shown):
-            cards_layout.insertWidget(i, _condition_card(cond, research))
+        else:
+            for i, cond in enumerate(shown):
+                cards_layout.insertWidget(i, _condition_card(cond, research))
 
         q = getattr(features, "signal_quality", 1.0)
         qtxt = f"qualidade do sinal {q:.0%}"
