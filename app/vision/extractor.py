@@ -40,8 +40,14 @@ class FeatureExtractor:
     def available(self) -> bool:
         return _MEDIAPIPE_OK
 
-    def capture(self, duration_s: float = 30.0) -> BiomarkerFeatures:
-        """Captura por `duration_s` segundos e devolve os biomarcadores agregados."""
+    def capture(self, duration_s: float = 30.0, on_frame=None,
+                should_stop=None) -> BiomarkerFeatures:
+        """Captura por `duration_s` segundos e devolve os biomarcadores agregados.
+
+        on_frame(rgb, elapsed, duration): callback opcional por frame (ex.: preview
+            ao vivo na UI). should_stop(): callable opcional; se retornar True,
+            interrompe a captura antecipadamente (cancelamento pela UI).
+        """
         if not _MEDIAPIPE_OK:
             raise RuntimeError(
                 "OpenCV/MediaPipe indisponíveis. Instale opencv-python e mediapipe.")
@@ -54,13 +60,20 @@ class FeatureExtractor:
         t0 = time.monotonic()
         frames = 0
         try:
-            while time.monotonic() - t0 < duration_s:
+            while True:
+                elapsed = time.monotonic() - t0
+                if elapsed >= duration_s:
+                    break
+                if should_stop is not None and should_stop():
+                    break
                 ok, frame = cap.read()
                 if not ok:
                     break
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 self._process_frame(rgb)
                 frames += 1
+                if on_frame is not None:
+                    on_frame(rgb, elapsed, duration_s)
         finally:
             cap.release()
 
