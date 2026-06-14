@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visão Clínica — Triagem por IA Local</title>
+<meta name="description" content="Triagem por visão computacional e IA local (BitNet b1.58 2B4T). 100% offline, privado. Indicadores de autismo, Parkinson, Alzheimer e Síndrome de Down.">
+<style>
+  :root{
+    --bg:#0a0b0e; --panel:#14161b; --panel2:#1b1e25; --border:#2a2e37;
+    --text:#e6e8ec; --muted:#8b909b; --accent:#4c8dff;
+    --alto:#ff5c5c; --moderado:#ffb020; --baixo:#3ecf8e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);
+    color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  .section{padding:64px 0;border-top:1px solid var(--border)}
+  h1{font-size:44px;font-weight:700;letter-spacing:-1px;line-height:1.1}
+  h2{font-size:13px;font-weight:700;letter-spacing:2px;color:var(--accent);
+    text-transform:uppercase;margin-bottom:18px}
+  h3{font-size:22px;font-weight:600;margin-bottom:10px}
+  p{color:var(--muted)}
+  .lead{font-size:19px;color:var(--text);max-width:680px}
+
+  /* hero */
+  .hero{padding:84px 0 64px;text-align:center;
+    background:radial-gradient(900px 400px at 50% -10%,rgba(76,141,255,.18),transparent)}
+  .badge{display:inline-block;background:var(--panel2);border:1px solid var(--border);
+    border-radius:999px;padding:6px 16px;font-size:12px;color:var(--muted);margin-bottom:24px}
+  .cta{display:inline-flex;gap:14px;margin-top:32px;flex-wrap:wrap;justify-content:center}
+  .btn{background:var(--accent);color:#fff;border-radius:10px;padding:13px 26px;
+    font-weight:600;font-size:15px}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+
+  .grid{display:grid;gap:18px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px}
+  .card .ico{font-size:24px;margin-bottom:10px}
+  .card h3{font-size:17px}
+  .card p{font-size:14px}
+
+  .shot{width:100%;border:1px solid var(--border);border-radius:14px;display:block;
+    box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .shot-cap{font-size:13px;color:var(--muted);text-align:center;margin-top:12px}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{padding:11px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+  .pill{display:inline-block;border-radius:8px;padding:2px 9px;font-size:11px;font-weight:700;color:#0a0b0e}
+  .pill.a{background:var(--alto)}.pill.m{background:var(--moderado)}.pill.b{background:var(--baixo)}
+
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;text-align:center}
+  .steps .s{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 10px}
+  .steps .n{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;margin:0 auto 10px;font-size:13px}
+  .steps .s p{font-size:12px}
+
+  .disc{background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.35);border-radius:14px;
+    padding:20px 24px;color:#ffb3b3;font-size:14px}
+  footer{padding:40px 0;color:var(--muted);font-size:13px;text-align:center}
+  .ref{font-size:13px;color:var(--muted)}
+  .ref li{margin:6px 0;list-style:none;padding-left:16px;position:relative}
+  .ref li:before{content:"▸";position:absolute;left:0;color:var(--accent)}
+  @media(max-width:760px){.g3,.g2,.steps{grid-template-columns:1fr}h1{font-size:32px}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">🔒 100% local & offline · privacidade dos dados médicos</span>
+    <h1>Visão Clínica</h1>
+    <p class="lead" style="margin:18px auto 0">Triagem por <strong>visão computacional</strong> e
+      <strong>IA local (BitNet b1.58 2B4T)</strong>. A partir de uma webcam, extrai biomarcadores
+      faciais, oculares e motores e gera indicadores probabilísticos de triagem — em segundos,
+      sem enviar nenhum dado para a nuvem.</p>
+    <div class="cta">
+      <a class="btn" href="#indicadores">Ver indicadores</a>
+      <a class="btn ghost" href="https://github.com/dheiver2/visao-clinica">Repositório</a>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <div class="wrap">
+    <img class="shot" src="assets/app.png" alt="Tela do software Visão Clínica">
+    <div class="shot-cap">Interface do software — captura ao vivo à esquerda, indicadores clínicos por condição à direita.</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>O que entrega</h2>
+    <div class="grid g3">
+      <div class="card"><div class="ico">🎥</div><h3>Captura por webcam</h3>
+        <p>OpenCV + MediaPipe (Face Mesh, Pose, Hands) extraem tremor, microexpressões,
+          rastreio ocular, simetria facial e movimento corporal.</p></div>
+      <div class="card"><div class="ico">🧠</div><h3>IA local nativa</h3>
+        <p>BitNet b1.58 2B4T roda na própria máquina (sem APIs externas) para correlacionar
+          os achados e gerar relatórios técnicos.</p></div>
+      <div class="card"><div class="ico">⚡</div><h3>Resultado instantâneo</h3>
+        <p>Indicadores clínicos determinísticos em milissegundos; a narrativa da IA é opcional
+          e roda em segundo plano.</p></div>
+      <div class="card"><div class="ico">🎯</div><h3>Acurácia controlada</h3>
+        <p>Cada indicador reporta uma confiança; só são exibidos os de acurácia média/alta.
+          Captura ruim aciona um aviso para refazer.</p></div>
+      <div class="card"><div class="ico">📄</div><h3>Relatórios</h3>
+        <p>Exportação em PDF e CSV, persistência local em SQLite, modos Pesquisa e Triagem.</p></div>
+      <div class="card"><div class="ico">🔬</div><h3>Base científica</h3>
+        <p>Técnicas fundamentadas em revistas de alto impacto (IEEE TBME, Nature Reviews
+          Neurology, J. Neuroscience Methods).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="indicadores">
+  <div class="wrap">
+    <h2>Indicadores clínicos de triagem</h2>
+    <div class="grid g2" style="align-items:start">
+      <div>
+        <table>
+          <tr><th>Condição rastreada</th><th>Faixa</th></tr>
+          <tr><td>Sinais compatíveis com <strong>TEA (autismo)</strong></td><td><span class="pill a">alto</span></td></tr>
+          <tr><td><strong>Perfil parkinsoniano</strong> (tremor, hipomimia, bradicinesia)</td><td><span class="pill m">moderado</span></td></tr>
+          <tr><td>Sinais tipo <strong>Alzheimer</strong> (oculomotor / cognitivo)</td><td><span class="pill a">alto</span></td></tr>
+          <tr><td>Sinais compatíveis com <strong>Síndrome de Down</strong></td><td><span class="pill m">moderado</span></td></tr>
+          <tr><td>Tremor parkinsoniano · Paralisia facial · Disfunção oculomotora</td><td><span class="pill b">base</span></td></tr>
+          <tr><td>Piscar · Sonolência · Estresse · Hipomimia · Discinesia</td><td><span class="pill b">base</span></td></tr>
+        </table>
+        <p style="margin-top:16px;font-size:13px">12 indicadores no total, cada um com score, nível
+          de risco, fatores e confiança.</p>
+      </div>
+      <div>
+        <img class="shot" src="assets/panel.png" alt="Painel de indicadores clínicos">
+        <div class="shot-cap">Painel clínico — cada card mostra nível de risco, score e acurácia.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Como funciona</h2>
+    <div class="steps">
+      <div class="s"><div class="n">1</div><strong>Webcam</strong><p>captura de 12s</p></div>
+      <div class="s"><div class="n">2</div><strong>Visão computacional</strong><p>MediaPipe extrai biomarcadores</p></div>
+      <div class="s"><div class="n">3</div><strong>Processamento de sinal</strong><p>filtros, Welch/SNR, qualidade</p></div>
+      <div class="s"><div class="n">4</div><strong>Motor clínico</strong><p>indicadores + confiança</p></div>
+      <div class="s"><div class="n">5</div><strong>BitNet local</strong><p>narrativa + relatório</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Técnicas avançadas (literatura)</h2>
+    <div class="grid g2">
+      <div class="card"><h3>rPPG — sinais vitais sem contato</h3>
+        <p>Frequência cardíaca e variabilidade (VFC) a partir da cor da pele.
+          <span class="ref">Wang et al., IEEE TBME 2017; Poh et al., Optics Express 2010.</span></p></div>
+      <div class="card"><h3>Métricas oculomotoras</h3>
+        <p>Estabilidade de fixação (BCEA) e main-sequence de saccades.
+          <span class="ref">Anderson &amp; MacAskill, Nat. Rev. Neurol. 2013; Bahill et al. 1975.</span></p></div>
+      <div class="card"><h3>Hipomimia facial (FACS)</h3>
+        <p>Redução da dinâmica das Action Units (bradicinesia facial).
+          <span class="ref">Bandini et al., J. Neurosci. Methods 2017; Ekman FACS.</span></p></div>
+      <div class="card"><h3>Estereotipias motoras</h3>
+        <p>Detecção de movimento repetitivo por autocorrelação.
+          <span class="ref">Goodwin et al., J. Autism Dev. Disord. 2011.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Privacidade por design</h2>
+    <p class="lead">Todo o processamento — imagem, vídeo, biomarcadores e a IA — ocorre
+      <strong>na própria máquina</strong>. Nenhum dado sai do computador, sem dependência de
+      serviços externos. Ideal para o sigilo de dados de saúde.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="disc">
+      <strong>Aviso científico.</strong> O software representa uma ferramenta de
+      <strong>triagem e apoio à pesquisa</strong>. Os resultados <strong>não constituem
+      diagnóstico médico</strong> e <strong>não substituem</strong> a avaliação de profissionais
+      de saúde especializados. Os limiares são baseados em literatura, porém ainda não calibrados
+      com dataset clínico; condições como Síndrome de Down e autismo exigem avaliação especializada.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Visão Clínica · IA local com BitNet b1.58 2B4T ·
+    <a href="https://github.com/dheiver2/visao-clinica">github.com/dheiver2/visao-clinica</a>
+  </div>
+</footer>
+
+</body>
+</html>
