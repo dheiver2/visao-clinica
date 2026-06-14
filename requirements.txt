@@ -13,7 +13,10 @@ dask[complete]>=2024.1
 
 # Backend de fallback do LLM (opcional — bitnet.cpp é o backend primário)
 torch>=2.2
-transformers>=4.44
+# BitNet em CPU regrediu no transformers 5.x (pesos ternários não desempacotam);
+# a linha 4.x é a validada para o fallback.
+transformers>=4.50,<5
+accelerate>=0.30   # exigido pelo quantizador BitNet no fallback transformers
 
 # Persistência e relatórios
 reportlab>=4.0

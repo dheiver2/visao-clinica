@@ -73,20 +73,38 @@ class TransformersBackend(LLMBackend):
 
         self._torch = torch
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        # Em GPU usa bfloat16; em CPU o BitNet faz "weight unpacking" e exige float32.
+        dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_id, torch_dtype=torch.bfloat16).to(self.device)
+        # transformers <5 usa torch_dtype; >=5 usa dtype. Tenta o moderno e cai p/ legado.
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_id, dtype=dtype).to(self.device)
+        except TypeError:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_id, torch_dtype=dtype).to(self.device)
 
     def generate(self, prompt: str, max_tokens: int = 512,
                  temperature: float = 0.7) -> str:
         messages = [{"role": "user", "content": prompt}]
-        inputs = self.tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt").to(self.device)
+        enc = self.tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, return_tensors="pt",
+            return_dict=True)
+        # transformers >=5 retorna BatchEncoding (dict); versões antigas, um tensor.
+        if hasattr(enc, "to"):
+            enc = enc.to(self.device)
+        if isinstance(enc, dict) or hasattr(enc, "input_ids"):
+            input_ids = enc["input_ids"]
+            gen_kwargs = {k: v for k, v in dict(enc).items()}
+        else:
+            input_ids = enc.to(self.device)
+            gen_kwargs = {"input_ids": input_ids}
+        prompt_len = input_ids.shape[1]
         with self._torch.no_grad():
             out = self.model.generate(
-                inputs, max_new_tokens=max_tokens, temperature=temperature,
+                **gen_kwargs, max_new_tokens=max_tokens, temperature=temperature,
                 do_sample=temperature > 0)
-        text = self.tokenizer.decode(out[0][inputs.shape[1]:], skip_special_tokens=True)
+        text = self.tokenizer.decode(out[0][prompt_len:], skip_special_tokens=True)
         return text.strip()
 
 

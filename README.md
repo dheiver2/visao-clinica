@@ -51,11 +51,16 @@ Tudo fica **cacheado localmente**; após o primeiro uso, roda 100% offline.
 
 ## Execução
 
+Use o launcher (usa sempre o Python do `.venv`, sem precisar ativar nada):
+
 ```bash
-python -m app.main                 # GUI (modo Pesquisa)
-python -m app.main --mode triagem  # GUI simplificada
-python -m app.main --cli --duration 30
+./run.sh                      # GUI (modo Pesquisa)
+./run.sh --mode triagem       # GUI simplificada
+./run.sh --cli --duration 30  # linha de comando
 ```
+
+> Se rodar manualmente com `python -m app.main`, **ative o venv antes**
+> (`source .venv/bin/activate`) — fora dele o comando `python` pode não existir.
 
 ## Modos
 - **Pesquisa:** todas as métricas, hipóteses, variáveis influentes e relatório completo.
