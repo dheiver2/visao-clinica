@@ -91,6 +91,56 @@ class FeatureExtractor:
         elapsed = max(time.monotonic() - t0, 1e-6)
         return self._aggregate(frames=frames, duration_s=elapsed)
 
+    def stream(self, on_frame, should_stop, analyze_flag,
+               duration_s: float = 12.0, on_analysis=None, on_progress=None):
+        """Mantém a webcam ATIVA continuamente, com preview ao vivo (overlay).
+
+        on_frame(rgb): chamado a cada frame (já com a malha desenhada).
+        should_stop(): encerra o streaming (fechar a janela).
+        analyze_flag(): callable que retorna True quando o usuário pediu uma análise;
+            ao detectar True, coleta `duration_s` segundos de biomarcadores, chama
+            on_analysis(features) e volta a só transmitir. Repetível à vontade.
+        on_progress(elapsed, total): progresso da janela de análise.
+        """
+        if not _MEDIAPIPE_OK:
+            raise RuntimeError("OpenCV/MediaPipe indisponíveis.")
+        cap = cv2.VideoCapture(self.camera_index)
+        if not cap.isOpened():
+            raise RuntimeError(f"Não foi possível abrir a webcam {self.camera_index}.")
+        analyzing = False
+        t0 = 0.0
+        try:
+            while not should_stop():
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                if not analyzing and analyze_flag():
+                    analyzing = True
+                    t0 = time.monotonic()
+                    self._series.clear()
+
+                if analyzing:
+                    elapsed = time.monotonic() - t0
+                    self._process_frame(rgb)
+                    if on_progress:
+                        on_progress(elapsed, duration_s)
+                    if elapsed >= duration_s:
+                        analyzing = False
+                        feats = self._aggregate(frames=len(self._series.get("lum", [])) or 1,
+                                                duration_s=max(elapsed, 1e-6))
+                        if on_analysis:
+                            on_analysis(feats)
+                else:
+                    # mantém o rosto detectado p/ o overlay mesmo fora da análise
+                    self._last_face = self._mp_face.process(rgb).multi_face_landmarks
+                    self._last_face = self._last_face[0] if self._last_face else None
+
+                on_frame(self._draw_overlay(rgb))
+        finally:
+            cap.release()
+
     # -- processamento por frame -------------------------------------------------
 
     def _draw_overlay(self, rgb):

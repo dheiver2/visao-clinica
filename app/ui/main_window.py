@@ -20,50 +20,47 @@ def _rgb_to_qimage(rgb):
 def _build_worker_class():
     from PySide6.QtCore import QThread, Signal
 
-    class Worker(QThread):
-        progress = Signal(str)
+    class CameraWorker(QThread):
+        """Mantém a webcam ATIVA continuamente; a análise é uma janela de 12s
+        disparada pelo usuário, que pode ser repetida sem reabrir a câmera."""
         frame = Signal(object)
-        panel_ready = Signal(object, object)   # (features, analysis) — instantâneo
-        summary_ready = Signal(str)            # narrativa do BitNet (background)
+        progress = Signal(str)
+        analysis_ready = Signal(object)        # features
         failed = Signal(str)
 
-        def __init__(self, mode, duration, engine, extractor, use_llm):
+        def __init__(self, duration, extractor):
             super().__init__()
-            self.mode, self.duration = mode, duration
-            self.engine, self.extractor = engine, extractor
-            self.use_llm = use_llm
+            self.duration = duration
+            self.extractor = extractor
             self._stop = False
+            self._analyze = False
+
+        def request_analysis(self):
+            self._analyze = True
 
         def stop(self):
             self._stop = True
 
         def run(self):
             try:
-                if not self.extractor.available():
-                    raise RuntimeError("OpenCV/MediaPipe indisponíveis.")
-                self.progress.emit("Capturando pela webcam — olhe para a câmera.")
+                def _flag():
+                    if self._analyze:
+                        self._analyze = False   # consome o pedido (uma janela)
+                        return True
+                    return False
 
-                def _on_frame(rgb, elapsed, total):
-                    self.frame.emit(rgb)
-                    self.progress.emit(f"__cap__{elapsed:.1f}/{total:.0f}")
-
-                features = self.extractor.capture(
-                    duration_s=self.duration, on_frame=_on_frame,
-                    should_stop=lambda: self._stop)
-
-                # Resultado clínico INSTANTÂNEO (determinístico, sem LLM).
-                analysis = self.engine.screen(features)
-                self.panel_ready.emit(features, analysis)
-
-                # Narrativa do BitNet: opcional e em background (lenta em CPU).
-                if self.use_llm:
-                    self.progress.emit("Gerando narrativa do BitNet (background)…")
-                    self.engine.enrich_with_llm(analysis, features)
-                    self.summary_ready.emit(analysis.summary or "")
+                self.extractor.stream(
+                    on_frame=lambda rgb: self.frame.emit(rgb),
+                    should_stop=lambda: self._stop,
+                    analyze_flag=_flag,
+                    duration_s=self.duration,
+                    on_analysis=lambda feats: self.analysis_ready.emit(feats),
+                    on_progress=lambda e, t: self.progress.emit(f"__cap__{e:.1f}/{t:.0f}"),
+                )
             except Exception as e:  # noqa: BLE001
                 self.failed.emit(str(e))
 
-    return Worker
+    return CameraWorker
 
 
 def _condition_card(cond, research: bool):
@@ -153,8 +150,8 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     llm_chk.setChecked(False)
     llm_chk.setToolTip("Gera um resumo do BitNet em background. O resultado clínico "
                        "já aparece instantaneamente sem isso.")
-    run_btn = QPushButton(f"Iniciar captura ({DURATION:.0f}s)")
-    stop_btn = QPushButton("Parar")
+    run_btn = QPushButton(f"Analisar ({DURATION:.0f}s)")
+    stop_btn = QPushButton("Encerrar câmera")
     stop_btn.setObjectName("ghost")
     stop_btn.setEnabled(False)
 
@@ -241,8 +238,9 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
                 item.widget().deleteLater()
 
     def set_running(running: bool):
+        # `running` = análise de 12s em andamento. A câmera segue ativa nos dois casos.
         run_btn.setEnabled(not running)
-        stop_btn.setEnabled(running)
+        stop_btn.setEnabled(True)          # "Encerrar câmera" sempre disponível
         mode_box.setEnabled(not running)
         if running:
             progress_bar.setValue(0)
@@ -320,27 +318,61 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         log.append(f"[ERRO] {msg}")
         set_running(False)
 
+    from PySide6.QtCore import QThread, Signal
+
+    class NarrativeWorker(QThread):
+        done = Signal(str)
+        def __init__(self, analysis, features):
+            super().__init__(); self.analysis, self.features = analysis, features
+        def run(self):
+            try:
+                engine.enrich_with_llm(self.analysis, self.features)
+                self.done.emit(self.analysis.summary or "")
+            except Exception as e:  # noqa: BLE001
+                self.done.emit(f"[narrativa indisponível: {e}]")
+
+    def on_analysis(features):
+        analysis = engine.screen(features)
+        on_panel(features, analysis)
+        # câmera continua ativa; libera novo "Analisar" imediatamente
+        set_running(False)
+        if llm_chk.isChecked():
+            status.setText("Gerando narrativa do BitNet (câmera segue ativa)…")
+            nw = NarrativeWorker(analysis, features)
+            nw.done.connect(on_summary)
+            state["narr"] = nw
+            nw.start()
+
     def on_run():
-        log.clear()
-        clear_cards()
+        log.clear(); clear_cards()
         set_running(True)
-        w = Worker(mode_box.currentText(), DURATION, engine, extractor,
-                   use_llm=llm_chk.isChecked())
-        w.progress.connect(on_progress)
-        w.frame.connect(on_frame)
-        w.panel_ready.connect(on_panel)
-        w.summary_ready.connect(on_summary)
-        w.failed.connect(on_failed)
-        state["worker"] = w
-        w.start()
+        status.setText("Analisando… olhe para a câmera (12s).")
+        state["worker"].request_analysis()
 
     def on_stop():
+        # encerra o streaming da câmera
         if state["worker"] is not None:
             state["worker"].stop()
-            status.setText("Interrompendo…")
+            status.setText("Câmera encerrada.")
+            run_btn.setEnabled(False); stop_btn.setEnabled(False)
+
+    # inicia a câmera assim que a janela abre (preview contínuo)
+    cam = Worker(DURATION, extractor)
+    cam.frame.connect(on_frame)
+    cam.progress.connect(on_progress)
+    cam.analysis_ready.connect(on_analysis)
+    cam.failed.connect(on_failed)
+    state["worker"] = cam
 
     run_btn.clicked.connect(on_run)
     stop_btn.clicked.connect(on_stop)
 
+    def on_close(ev):
+        cam.stop(); cam.wait(2000); ev.accept()
+    win.closeEvent = on_close
+
     win.show()
+    cam.start()
+    stop_btn.setEnabled(True)   # câmera ativa
+    status.setText("Câmera ativa — clique em Analisar para iniciar a triagem.")
     return app.exec()
