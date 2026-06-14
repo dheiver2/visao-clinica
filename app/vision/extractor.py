@@ -15,7 +15,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from . import signal
+from . import motor_face, oculomotor, rppg, signal
 from .features import BiomarkerFeatures
 
 try:
@@ -93,6 +93,7 @@ class FeatureExtractor:
             lm = face.multi_face_landmarks[0].landmark
             self._series["face_asym"].append(self._facial_asymmetry(lm))
             self._series["ear"].append(self._eye_aspect_ratio(lm))
+            self._sample_skin_roi(rgb, lm)   # cor da pele p/ rPPG
             # Ativações faciais (estilo blendshape) para microexpressões
             for name, val in self._facial_activations(lm).items():
                 self._series[f"fa_{name}"].append(val)
@@ -110,6 +111,22 @@ class FeatureExtractor:
             self._series["body_y"].append(nose.y)
 
     # -- cálculos de marcadores --------------------------------------------------
+
+    def _sample_skin_roi(self, rgb, lm) -> None:
+        """Cor média de ROIs de pele (testa + bochechas) para rPPG."""
+        h, w = rgb.shape[:2]
+        # testa (10/151/9) e bochechas (50/280) — landmarks estáveis de pele
+        pts = [lm[10], lm[151], lm[9], lm[50], lm[280]]
+        xs = [int(min(max(p.x, 0), 1) * (w - 1)) for p in pts]
+        ys = [int(min(max(p.y, 0), 1) * (h - 1)) for p in pts]
+        x0, x1 = max(min(xs) - 8, 0), min(max(xs) + 8, w)
+        y0, y1 = max(min(ys) - 8, 0), min(max(ys) + 8, h)
+        if x1 <= x0 or y1 <= y0:
+            return
+        roi = rgb[y0:y1, x0:x1].reshape(-1, 3).mean(axis=0)
+        self._series["roi_r"].append(float(roi[0]))
+        self._series["roi_g"].append(float(roi[1]))
+        self._series["roi_b"].append(float(roi[2]))
 
     @staticmethod
     def _facial_asymmetry(lm) -> float:
@@ -206,6 +223,21 @@ class FeatureExtractor:
         bright_q = signal.quality_from_brightness(self._series.get("lum", []))
         sig_quality = float(max(0.0, min(1.0, face_rate)) * bright_q)
 
+        # --- Biomarcadores avançados (literatura) ---
+        roi = np.column_stack([self._series.get("roi_r", []),
+                               self._series.get("roi_g", []),
+                               self._series.get("roi_b", [])]) \
+            if self._series.get("roi_g") else np.empty((0, 3))
+        hr_bpm, hrv_ms, rppg_q = rppg.estimate(roi, fps)
+        bcea = oculomotor.fixation_bcea(self._series.get("gaze_x", []),
+                                        self._series.get("gaze_y", []))
+        ms_slope, _ = oculomotor.main_sequence_slope(
+            self._series.get("gaze_x", []), self._series.get("gaze_y", []), fps)
+        au = [np.asarray(v, float) for k, v in self._series.items()
+              if k.startswith("fa_")]
+        hypomimia = motor_face.hypomimia_index(au)
+        stereotypy = motor_face.stereotypy_index(self._series.get("body_x", []), fps)
+
         return BiomarkerFeatures(
             duration_s=duration_s,
             frames=frames,
@@ -228,6 +260,13 @@ class FeatureExtractor:
             signal_quality=sig_quality,
             face_detection_rate=float(max(0.0, min(1.0, face_rate))),
             tremor_snr=hand_snr,
+            heart_rate_bpm=hr_bpm,
+            hrv_sdnn_ms=hrv_ms,
+            rppg_quality=rppg_q,
+            fixation_bcea=bcea,
+            saccade_main_seq_slope=ms_slope,
+            hypomimia_index=hypomimia,
+            stereotypy_index=stereotypy,
             time_series={k: list(v) for k, v in self._series.items()},
         )
 

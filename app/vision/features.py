@@ -44,6 +44,15 @@ class BiomarkerFeatures:
     body_movement_index: float = 0.0
     postural_sway: float = 0.0
 
+    # Biomarcadores avançados fundamentados em literatura
+    heart_rate_bpm: float = 0.0          # rPPG (POS, Wang et al. 2017)
+    hrv_sdnn_ms: float = 0.0             # VFC (SDNN) sem contato
+    rppg_quality: float = 0.0            # confiabilidade do sinal rPPG
+    fixation_bcea: float = 0.0          # estabilidade de fixação (Anderson 2013)
+    saccade_main_seq_slope: float = 0.0  # main sequence (Bahill 1975)
+    hypomimia_index: float = 0.0        # hipomimia FACS (Bandini 2017)
+    stereotypy_index: float = 0.0       # estereotipias (Goodwin 2011)
+
     # Marcadores compostos (TEA, Parkinson, Alzheimer, Down)
     gaze_center_ratio: float = 0.0       # fração do tempo com olhar ao centro (contato visual)
     expression_amplitude: float = 0.0    # amplitude média de ativação facial (expressividade)

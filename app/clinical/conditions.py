@@ -131,15 +131,20 @@ def _eval_drowsiness(f: BiomarkerFeatures):
 
 
 def _eval_stress_anxiety(f: BiomarkerFeatures):
-    # Estresse/ansiedade: microexpressões frequentes + piscar acelerado.
+    # Estresse/ansiedade: microexpressões + piscar acelerado + VFC reduzida.
+    # VFC baixa indica disregulação autonômica (rPPG; gated pela qualidade do sinal).
     micro = _band(f.microexpression_rate, 6.0, 20.0)
     blink = _band(f.blink_rate_per_min, 25.0, 50.0)
-    score = _clamp(0.6 * micro + 0.4 * blink)
+    hrv_gate = _band(f.rppg_quality, 0.3, 0.7)
+    low_hrv = _band(40.0 - f.hrv_sdnn_ms, 0.0, 40.0) * hrv_gate
+    score = _clamp(0.45 * micro + 0.3 * blink + 0.25 * low_hrv)
     factors = []
     if micro > 0.3:
         factors.append(f"microexpressões {f.microexpression_rate:.0f}/min")
     if blink > 0.3:
         factors.append("piscar acelerado")
+    if low_hrv > 0.3:
+        factors.append(f"VFC reduzida (SDNN {f.hrv_sdnn_ms:.0f} ms)")
     return score, factors
 
 
@@ -175,9 +180,11 @@ def _eval_autism_signs(f: BiomarkerFeatures):
     # facial e movimentos repetitivos (estereotipias).
     low_eye_contact = _band(0.55 - f.gaze_center_ratio, 0.0, 0.45)
     low_expressivity = _band(6.0 - f.microexpression_rate, 0.0, 6.0)
-    repetitive = _clamp(_band(f.movement_periodicity, 0.15, 0.45)
-                        * _band(f.body_movement_index, 0.04, 0.25) + 0.4
-                        * _band(f.movement_periodicity, 0.2, 0.5))
+    # Estereotipias: periodicidade do movimento + autocorrelação (Goodwin 2011).
+    repetitive = _clamp(max(
+        _band(f.movement_periodicity, 0.15, 0.45) * _band(f.body_movement_index, 0.04, 0.25)
+        + 0.4 * _band(f.movement_periodicity, 0.2, 0.5),
+        _band(f.stereotypy_index, 0.2, 0.6)))
     atypical_gaze = _band(f.saccade_rate, 120.0, 240.0)
     score = _clamp(0.35 * low_eye_contact + 0.25 * low_expressivity
                    + 0.25 * repetitive + 0.15 * atypical_gaze)
@@ -196,7 +203,8 @@ def _eval_parkinson_composite(f: BiomarkerFeatures):
     # bradicinesia (lentidão/redução de movimento).
     tremor = (_bell(f.tremor_hand_hz, 5.0, 2.5)
               * _band(f.tremor_hand_amplitude, 0.004, 0.03) * _snr_gate(f))
-    hypomimia = _band(4.0 - f.microexpression_rate, 0.0, 4.0)
+    # Hipomimia: contagem de microexpressões OU índice FACS de dinâmica (Bandini 2017).
+    hypomimia = max(_band(4.0 - f.microexpression_rate, 0.0, 4.0), f.hypomimia_index)
     low_blink = _band(10.0 - f.blink_rate_per_min, 0.0, 8.0)
     bradykinesia = _band(0.03 - f.body_movement_index, 0.0, 0.03)
     score = _clamp(0.35 * tremor + 0.25 * hypomimia + 0.2 * low_blink + 0.2 * bradykinesia)
@@ -216,7 +224,9 @@ def _eval_alzheimer_signs(f: BiomarkerFeatures):
     # Comprometimento cognitivo (tipo Alzheimer): instabilidade oculomotora,
     # fixação prejudicada e expressividade reduzida. Marcadores oculares são dos
     # mais estudados em demências.
-    gaze_instability = _band(f.gaze_dispersion, 0.14, 0.4)
+    # Instabilidade de fixação: dispersão + BCEA (Anderson & MacAskill 2013).
+    gaze_instability = _clamp(max(_band(f.gaze_dispersion, 0.14, 0.4),
+                                  _band(f.fixation_bcea, 0.05, 0.5)))
     poor_fixation = _band(0.5 - f.gaze_center_ratio, 0.0, 0.4)
     erratic_saccade = _band(f.saccade_rate, 120.0, 240.0)
     low_expressivity = _band(4.0 - f.microexpression_rate, 0.0, 4.0)

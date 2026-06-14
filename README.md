@@ -81,6 +81,20 @@ indicadores compostos para os transtornos-alvo:
 Mais 8 indicadores de base (tremor, paralisia facial, oculomotor, piscar,
 sonolência, estresse, hipomimia, discinesia).
 
+### Biomarcadores avançados fundamentados em literatura
+
+Técnicas validadas em revistas de alto impacto (citações em [REFERENCES.md](REFERENCES.md)):
+
+| Técnica | Módulo | Referência-chave |
+|---|---|---|
+| **rPPG** (FC + VFC sem contato, método POS) | `vision/rppg.py` | Wang et al., *IEEE TBME* 2017 |
+| **BCEA + main-sequence** de saccades | `vision/oculomotor.py` | Anderson & MacAskill, *Nat Rev Neurol* 2013 |
+| **Hipomimia por Action Units (FACS)** | `vision/motor_face.py` | Bandini et al., *J Neurosci Methods* 2017 |
+| **Estereotipias por autocorrelação** | `vision/motor_face.py` | Goodwin et al., *JADD* 2011 |
+
+Esses marcadores alimentam os indicadores: Parkinson usa hipomimia FACS; Alzheimer
+usa instabilidade de fixação (BCEA); autismo usa estereotipia; estresse usa VFC.
+
 ### Técnicas avançadas de precisão (`app/vision/signal.py`)
 
 - **One-Euro filter** — suavização adaptativa dos landmarks (reduz jitter sem
