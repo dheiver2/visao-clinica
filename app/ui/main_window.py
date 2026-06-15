@@ -72,33 +72,37 @@ def _condition_card(cond, research: bool):
     card = QFrame()
     card.setObjectName("card")
     lay = QVBoxLayout(card)
-    lay.setContentsMargins(14, 12, 14, 12)
-    lay.setSpacing(6)
+    lay.setContentsMargins(16, 14, 16, 14)
+    lay.setSpacing(9)
 
     header = QHBoxLayout()
+    dot = QLabel("●")
+    dot.setStyleSheet(f"color:{color}; font-size:11px;")
     name = QLabel(cond.name)
-    name.setStyleSheet("font-weight:600; font-size:13px;")
+    name.setStyleSheet("font-weight:700; font-size:13.5px; letter-spacing:-0.2px;")
     name.setWordWrap(True)
     badge = QLabel(cond.level.upper())
     badge.setAlignment(Qt.AlignCenter)
     badge.setStyleSheet(
-        f"background:{color}; color:#0a0b0e; border-radius:8px; "
-        f"padding:2px 10px; font-size:10px; font-weight:700;")
+        f"background: rgba(0,0,0,0.0); color:{color}; border:1px solid {color}; "
+        f"border-radius:9px; padding:2px 11px; font-size:10px; font-weight:800; "
+        f"letter-spacing:0.5px;")
+    header.addWidget(dot, 0, Qt.AlignVCenter)
     header.addWidget(name, 1)
     header.addWidget(badge, 0, Qt.AlignTop)
     lay.addLayout(header)
 
     # barra de score
     bar_bg = QFrame()
-    bar_bg.setFixedHeight(6)
-    bar_bg.setStyleSheet(f"background:{theme.PANEL_2}; border-radius:3px;")
+    bar_bg.setFixedHeight(7)
+    bar_bg.setStyleSheet(f"background:{theme.PANEL_2}; border-radius:4px;")
     bar = QFrame(bar_bg)
     pct = int(max(0.02, cond.score) * 100)
-    bar.setStyleSheet(f"background:{color}; border-radius:3px;")
-    bar.setGeometry(0, 0, 0, 6)
+    bar.setStyleSheet(f"background:{color}; border-radius:4px;")
+    bar.setGeometry(0, 0, 0, 7)
     bar_bg._bar, bar_bg._pct = bar, pct
     def _resize(ev, b=bar, bg=bar_bg, p=pct):
-        b.setGeometry(0, 0, int(bg.width() * p / 100), 6)
+        b.setGeometry(0, 0, int(bg.width() * p / 100), 7)
     bar_bg.resizeEvent = _resize
     lay.addWidget(bar_bg)
 
@@ -129,6 +133,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     Worker = _build_worker_class()
 
     win = QWidget()
+    win.setObjectName("root")
     win.setWindowTitle("Visão Clínica — Triagem por IA Local (BitNet b1.58 2B4T)")
     win.resize(1180, 760)
 
