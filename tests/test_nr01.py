@@ -25,6 +25,34 @@ def test_high_stress_detected():
     assert ind["estresse"].level in ("moderado", "alto")
 
 
+def test_panel_has_eight_factors():
+    assert len(PSYCH_PANEL) == 8
+    keys = {k for k, _, _ in PSYCH_PANEL}
+    for k in ("ansiedade", "autonomico", "carga_mental", "agitacao"):
+        assert k in keys
+
+
+def test_ansiedade_detected():
+    f = BiomarkerFeatures(frames=360, fps=30.0, blink_rate_per_min=46,
+                          gaze_dispersion=0.38, saccade_rate=210)
+    ind = {i.key: i for i in assess_psychosocial(f)}
+    assert ind["ansiedade"].level in ("moderado", "alto")
+
+
+def test_autonomico_detected():
+    f = BiomarkerFeatures(frames=360, fps=30.0, hrv_sdnn_ms=12,
+                          heart_rate_bpm=105, rppg_quality=0.9)
+    ind = {i.key: i for i in assess_psychosocial(f)}
+    assert ind["autonomico"].level in ("moderado", "alto")
+
+
+def test_agitacao_detected():
+    f = BiomarkerFeatures(frames=360, fps=30.0, body_movement_index=0.28,
+                          stereotypy_index=0.55)
+    ind = {i.key: i for i in assess_psychosocial(f)}
+    assert ind["agitacao"].level in ("moderado", "alto")
+
+
 def test_action_plan_structure():
     f = BiomarkerFeatures(frames=360, fps=30.0, microexpression_rate=18,
                           blink_rate_per_min=46, hrv_sdnn_ms=12, rppg_quality=0.9,

@@ -85,10 +85,62 @@ def _eval_afeto(f: BiomarkerFeatures):
     return score, fac
 
 
+def _eval_ansiedade(f: BiomarkerFeatures):
+    # Ansiedade/tensão: piscar acelerado + olhar disperso + saccades inquietas.
+    blink = _band(f.blink_rate_per_min, 25.0, 50.0)
+    disp = _band(f.gaze_dispersion, 0.14, 0.4)
+    sacc = _band(f.saccade_rate, 120.0, 240.0)
+    score = _clamp(0.4 * blink + 0.35 * disp + 0.25 * sacc)
+    fac = []
+    if blink > 0.3: fac.append("piscar acelerado")
+    if disp > 0.3: fac.append("olhar disperso")
+    if sacc > 0.3: fac.append("saccades inquietas")
+    return score, fac
+
+
+def _eval_agitacao(f: BiomarkerFeatures):
+    # Agitação/inquietação psicomotora: movimentação corporal + estereotipia.
+    body = _band(f.body_movement_index, 0.08, 0.3)
+    stereo = _band(f.stereotypy_index, 0.2, 0.6)
+    score = _clamp(0.6 * body + 0.4 * stereo)
+    fac = []
+    if body > 0.3: fac.append("movimentação corporal aumentada")
+    if stereo > 0.3: fac.append("movimentos repetitivos")
+    return score, fac
+
+
+def _eval_carga_mental(f: BiomarkerFeatures):
+    # Carga mental/esforço cognitivo: piscar reduzido (concentração) + instabilidade
+    # de fixação (esforço sustentado). Distinto de fadiga (que tem baixa movimentação).
+    low_blink = _band(10.0 - f.blink_rate_per_min, 0.0, 8.0)
+    instab = max(_band(f.gaze_dispersion, 0.14, 0.4), _band(f.fixation_bcea, 0.05, 0.5))
+    score = _clamp(0.5 * low_blink + 0.5 * instab)
+    fac = []
+    if low_blink > 0.3: fac.append("piscar reduzido (concentração)")
+    if instab > 0.3: fac.append("instabilidade de fixação")
+    return score, fac
+
+
+def _eval_autonomico(f: BiomarkerFeatures):
+    # Estresse cardiovascular/autonômico: VFC baixa + FC elevada (rPPG).
+    gate = _band(f.rppg_quality, 0.3, 0.7)
+    low_hrv = _band(40.0 - f.hrv_sdnn_ms, 0.0, 40.0) * gate
+    high_hr = _band(f.heart_rate_bpm - 85.0, 0.0, 30.0) * gate
+    score = _clamp(0.6 * low_hrv + 0.4 * high_hr)
+    fac = []
+    if low_hrv > 0.3: fac.append(f"VFC reduzida (SDNN {f.hrv_sdnn_ms:.0f} ms)")
+    if high_hr > 0.3: fac.append(f"FC elevada ({f.heart_rate_bpm:.0f} bpm)")
+    return score, fac
+
+
 PSYCH_PANEL = [
     ("estresse", "Estresse ocupacional", _eval_estresse),
+    ("ansiedade", "Ansiedade / tensão", _eval_ansiedade),
+    ("autonomico", "Estresse cardiovascular (VFC/FC)", _eval_autonomico),
+    ("carga_mental", "Carga mental / esforço cognitivo", _eval_carga_mental),
     ("fadiga", "Fadiga / cansaço", _eval_fadiga),
     ("sobrecarga", "Sobrecarga / risco de burnout", _eval_sobrecarga),
+    ("agitacao", "Agitação / inquietação", _eval_agitacao),
     ("afeto", "Desengajamento / afeto reduzido", _eval_afeto),
 ]
 
