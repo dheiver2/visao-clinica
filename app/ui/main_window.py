@@ -144,7 +144,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
 
     DURATION = 12.0
     mode_box = QComboBox()
-    mode_box.addItems(["pesquisa", "triagem"])
+    mode_box.addItems(["pesquisa", "triagem", "ocupacional (NR-01)"])
     mode_box.setCurrentText(default_mode)
     llm_chk = QCheckBox("Narrativa IA (lento)")
     llm_chk.setChecked(False)
@@ -332,6 +332,10 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
                 self.done.emit(f"[narrativa indisponível: {e}]")
 
     def on_analysis(features):
+        if "ocupacional" in mode_box.currentText():
+            on_occupational(features)
+            set_running(False)
+            return
         analysis = engine.screen(features)
         on_panel(features, analysis)
         # câmera continua ativa; libera novo "Analisar" imediatamente
@@ -343,7 +347,54 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
             state["narr"] = nw
             nw.start()
 
+    def on_occupational(features):
+        from app.clinical.nr01 import (action_plan, assess_psychosocial,
+                                       overall_risk)
+        from app.report.exporter import export_nr01_pdf
+        ind = assess_psychosocial(features)
+        risk = overall_risk(ind)
+        plan = action_plan(ind)
+        progress_bar.setRange(0, 100); progress_bar.setValue(100)
+        color = theme.LEVEL_COLOR.get(risk, theme.MUTED)
+        overall.setText(f"Risco psicossocial: {risk.upper()}")
+        overall.setStyleSheet(f"font-size:14px; font-weight:700; color:{color};")
+        clear_cards()
+        from app.clinical.conditions import ConditionResult
+        for i, p in enumerate(ind):
+            card = _condition_card(ConditionResult(
+                key=p.key, name=p.name, score=p.score, level=p.level,
+                factors=p.factors, rationale="Sustentado por: " + "; ".join(p.factors)
+                if p.factors else "Sem sinais relevantes.", confidence=1.0), True)
+            cards_layout.insertWidget(i, card)
+        try:
+            import os
+            os.makedirs("data", exist_ok=True)
+            out = "data/plano_acao_nr01.pdf"
+            export_nr01_pdf(ind, plan, out, risk_level=risk)
+            log.append(f"Plano de ação NR-01 salvo em {out}")
+        except Exception as e:  # noqa: BLE001
+            log.append(f"[PDF indisponível: {e}]")
+        status.setText("Triagem ocupacional concluída — plano de ação gerado.")
+
     def on_run():
+        # Modo ocupacional exige consentimento informado (LGPD) a cada sessão.
+        if "ocupacional" in mode_box.currentText() and not state.get("consent"):
+            from PySide6.QtWidgets import QMessageBox
+            box = QMessageBox(win)
+            box.setWindowTitle("Consentimento — Uso Ocupacional (LGPD)")
+            box.setIcon(QMessageBox.Information)
+            box.setText("Triagem de bem-estar (NR-01)")
+            box.setInformativeText(
+                "Esta análise é VOLUNTÁRIA e de apoio ao bem-estar. NÃO é exame médico "
+                "nem base para decisão disciplinar. Os dados são sensíveis (LGPD) e o uso "
+                "recomendado é agregado/anonimizado.\n\nVocê autoriza esta captura?")
+            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            box.button(QMessageBox.Yes).setText("Autorizo")
+            box.button(QMessageBox.No).setText("Não autorizo")
+            if box.exec() != QMessageBox.Yes:
+                status.setText("Captura cancelada (sem consentimento).")
+                return
+            state["consent"] = True
         log.clear(); clear_cards()
         set_running(True)
         status.setText("Analisando… olhe para a câmera (12s).")

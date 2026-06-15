@@ -54,3 +54,35 @@ def export_pdf(report_text: str, analysis: ClinicalAnalysis,
     flow.append(Paragraph(f"<i>{DISCLAIMER}</i>", styles["Italic"]))
     doc.build(flow)
     return out_path
+
+
+def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado"):
+    """Gera o relatório PDF do plano de ação NR-01 (riscos psicossociais)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+
+    from app.clinical.nr01 import DISCLAIMER_NR01
+
+    out_path = Path(out_path)
+    doc = SimpleDocTemplate(str(out_path), pagesize=A4)
+    st = getSampleStyleSheet()
+    flow = [
+        Paragraph("Plano de Ação — NR-01 (Riscos Psicossociais)", st["Title"]),
+        Paragraph(f"Nível de risco psicossocial: <b>{risk_level.upper()}</b>", st["Normal"]),
+        Spacer(1, 10),
+        Paragraph("Indicadores de bem-estar (triagem voluntária)", st["Heading3"]),
+    ]
+    for i in indicators:
+        flow.append(Paragraph(f"• <b>{i.name}</b>: {i.level} (score {i.score:.2f})", st["Normal"]))
+    flow.append(Spacer(1, 12))
+    flow.append(Paragraph("Plano de ação (GRO/PGR)", st["Heading3"]))
+    for p in plan:
+        flow.append(Paragraph(f"<b>{p['fase']}</b> — <i>{p['prazo']}</i>", st["Normal"]))
+        for a in p["acoes"]:
+            flow.append(Paragraph(f"&nbsp;&nbsp;• {a}", st["Normal"]))
+        flow.append(Spacer(1, 6))
+    flow.append(Spacer(1, 12))
+    flow.append(Paragraph(f"<i>{DISCLAIMER_NR01}</i>", st["Italic"]))
+    doc.build(flow)
+    return out_path
