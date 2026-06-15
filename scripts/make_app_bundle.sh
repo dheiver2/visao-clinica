@@ -22,13 +22,26 @@ p = QPainter(img); p.setRenderHint(QPainter.Antialiasing)
 g = QLinearGradient(0, 0, S, S); g.setColorAt(0, QColor('#0c0f15')); g.setColorAt(1, QColor('#05070b'))
 p.setBrush(QBrush(g)); p.setPen(Qt.NoPen); p.drawRoundedRect(QRectF(40, 40, S-80, S-80), 200, 200)
 cx, cy = S/2, S/2
-p.setPen(QPen(QColor('#4c8dff'), 22)); p.setBrush(Qt.NoBrush); p.drawEllipse(QPointF(cx, cy), 300, 300)
+# contorno de rosto + malha de landmarks (identidade do produto)
+p.setPen(QPen(QColor('#4c8dff'), 18)); p.setBrush(Qt.NoBrush)
+p.drawEllipse(QPointF(cx, cy+10), 250, 310)
+rng = np.random.default_rng(7)
+pts = []
+for _ in range(80):
+    a = rng.uniform(0, 2*math.pi); r = rng.uniform(0.2, 0.95)
+    pts.append((cx + 250*r*math.cos(a), cy+10 + 310*r*math.sin(a)))
+# arestas da malha
+p.setPen(QPen(QColor(62, 207, 142, 150), 3))
+for i in range(0, len(pts)-1, 1):
+    if rng.random() < 0.5:
+        j = rng.integers(0, len(pts))
+        p.drawLine(int(pts[i][0]), int(pts[i][1]), int(pts[j][0]), int(pts[j][1]))
 p.setPen(Qt.NoPen); p.setBrush(QColor('#3ecf8e'))
-rng = np.random.default_rng(3)
-for _ in range(70):
-    a = rng.uniform(0, 2*math.pi); r = rng.uniform(40, 270)
-    p.drawEllipse(QPointF(cx+r*math.cos(a), cy+r*math.sin(a)), 9, 9)
-p.setBrush(QColor('#4c8dff')); p.drawEllipse(QPointF(cx, cy), 46, 46)
+for x, y in pts:
+    p.drawEllipse(QPointF(x, y), 8, 8)
+# olhos
+p.setBrush(QColor('#4c8dff'))
+p.drawEllipse(QPointF(cx-95, cy-40), 26, 26); p.drawEllipse(QPointF(cx+95, cy-40), 26, 26)
 p.end(); img.save('/tmp/icon_1024.png')
 PYEOF
 

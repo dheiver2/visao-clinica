@@ -155,13 +155,23 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     stop_btn.setObjectName("ghost")
     stop_btn.setEnabled(False)
 
+    from PySide6.QtWidgets import QLineEdit
+    sector_edit = QLineEdit()
+    sector_edit.setPlaceholderText("Setor (NR-01)")
+    sector_edit.setMaximumWidth(140)
+    sector_edit.setText("Geral")
+    report_btn = QPushButton("Relatório do setor")
+    report_btn.setObjectName("ghost")
+
     header = QHBoxLayout()
     header.addLayout(head_txt)
     header.addStretch()
     header.addWidget(QLabel("Modo:"))
     header.addWidget(mode_box)
+    header.addWidget(sector_edit)
     header.addWidget(llm_chk)
     header.addWidget(run_btn)
+    header.addWidget(report_btn)
     header.addWidget(stop_btn)
 
     # ---- coluna esquerda: câmera ----
@@ -371,10 +381,52 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
             os.makedirs("data", exist_ok=True)
             out = "data/plano_acao_nr01.pdf"
             export_nr01_pdf(ind, plan, out, risk_level=risk)
+            # grava a sessão ANONIMIZADA (só níveis) na amostra do setor
+            from app.clinical.nr01_aggregate import append_session
+            setor = sector_edit.text().strip() or "Geral"
+            append_session(setor, ind)
             log.append(f"Plano de ação NR-01 salvo em {out}")
+            log.append(f"Sessão anonimizada adicionada à amostra do setor '{setor}'.")
         except Exception as e:  # noqa: BLE001
             log.append(f"[PDF indisponível: {e}]")
         status.setText("Triagem ocupacional concluída — plano de ação gerado.")
+
+    def on_sector_report():
+        from app.clinical.nr01 import action_plan
+        from app.clinical.nr01_aggregate import aggregate
+        from app.report.exporter import export_nr01_aggregate_pdf
+        setor = sector_edit.text().strip() or "Geral"
+        rep = aggregate(setor)
+        if rep.n == 0:
+            log.append(f"Nenhuma triagem registrada para o setor '{setor}'.")
+            status.setText("Amostra do setor vazia.")
+            return
+        clear_cards()
+        overall.setText(f"Setor {setor} · n={rep.n}")
+        overall.setStyleSheet("font-size:14px; font-weight:700;")
+        from app.clinical.conditions import ConditionResult
+        for i, (fator, d) in enumerate(rep.by_factor.items()):
+            lvl = "alto" if d["alto"] >= 34 else ("moderado" if d["moderado"] + d["alto"] >= 34 else "baixo")
+            c = ConditionResult(key=fator, name=fator, score=(d["alto"] + 0.5 * d["moderado"]) / 100.0,
+                                level=lvl,
+                                rationale=f"alto {d['alto']}% · moderado {d['moderado']}% · baixo {d['baixo']}%",
+                                confidence=1.0, factors=[])
+            cards_layout.insertWidget(i, _condition_card(c, True))
+        try:
+            import os
+            os.makedirs("data", exist_ok=True)
+            out = f"data/relatorio_setor_{setor}.pdf"
+            # plano com base no fator prioritário (usa o template de alto risco)
+            from app.clinical.nr01 import assess_psychosocial
+            from app.vision.features import BiomarkerFeatures
+            plan = action_plan(assess_psychosocial(BiomarkerFeatures(
+                frames=360, fps=30, microexpression_rate=18, blink_rate_per_min=46,
+                hrv_sdnn_ms=12, rppg_quality=0.9))) if rep.overall_dist.get("alto", 0) > 0 else action_plan([])
+            export_nr01_aggregate_pdf(rep, plan, out)
+            log.append(f"Relatório agregado do setor salvo em {out} (n={rep.n}, anonimizado).")
+        except Exception as e:  # noqa: BLE001
+            log.append(f"[PDF indisponível: {e}]")
+        status.setText(f"Relatório agregado do setor '{setor}' gerado.")
 
     def on_run():
         # Modo ocupacional exige consentimento informado (LGPD) a cada sessão.
@@ -417,6 +469,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
 
     run_btn.clicked.connect(on_run)
     stop_btn.clicked.connect(on_stop)
+    report_btn.clicked.connect(on_sector_report)
 
     def on_close(ev):
         cam.stop(); cam.wait(2000); ev.accept()

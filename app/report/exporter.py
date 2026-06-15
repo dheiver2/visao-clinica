@@ -86,3 +86,50 @@ def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado"):
     flow.append(Paragraph(f"<i>{DISCLAIMER_NR01}</i>", st["Italic"]))
     doc.build(flow)
     return out_path
+
+
+def export_nr01_aggregate_pdf(report, plan, out_path):
+    """Relatório AGREGADO e anonimizado por setor (NR-01) em PDF."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.lib import colors
+
+    from app.clinical.nr01 import DISCLAIMER_NR01
+
+    out_path = Path(out_path)
+    doc = SimpleDocTemplate(str(out_path), pagesize=A4)
+    st = getSampleStyleSheet()
+    flow = [
+        Paragraph(f"Relatório Agregado NR-01 — Setor: {report.setor}", st["Title"]),
+        Paragraph(f"Amostra: <b>{report.n}</b> triagens voluntárias (anonimizadas)", st["Normal"]),
+        Spacer(1, 8),
+        Paragraph("Distribuição do risco psicossocial global", st["Heading3"]),
+        Paragraph(" · ".join(f"{lv}: {pct}%" for lv, pct in report.overall_dist.items()), st["Normal"]),
+        Spacer(1, 10),
+        Paragraph("Distribuição por fator (% de colaboradores)", st["Heading3"]),
+    ]
+    data = [["Fator", "Baixo", "Moderado", "Alto"]]
+    for fator, d in report.by_factor.items():
+        data.append([fator, f"{d['baixo']}%", f"{d['moderado']}%", f"{d['alto']}%"])
+    tbl = Table(data, hAlign="LEFT")
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1b1e25")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+    ]))
+    flow += [tbl, Spacer(1, 12)]
+    if report.priority:
+        flow.append(Paragraph("Fatores prioritários: " + ", ".join(report.priority), st["Normal"]))
+        flow.append(Spacer(1, 8))
+    flow.append(Paragraph("Plano de ação (GRO/PGR)", st["Heading3"]))
+    for p in plan:
+        flow.append(Paragraph(f"<b>{p['fase']}</b> — <i>{p['prazo']}</i>", st["Normal"]))
+        for a in p["acoes"]:
+            flow.append(Paragraph(f"&nbsp;&nbsp;• {a}", st["Normal"]))
+        flow.append(Spacer(1, 6))
+    flow.append(Spacer(1, 10))
+    flow.append(Paragraph(f"<i>{DISCLAIMER_NR01}</i>", st["Italic"]))
+    doc.build(flow)
+    return out_path

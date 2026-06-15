@@ -14,3 +14,6 @@ scripts/e2e_llm.py
 
 models/*.task
 models/face_landmarker.task
+
+data/nr01/
+data/*.pdf
