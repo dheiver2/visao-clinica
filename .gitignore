@@ -17,3 +17,8 @@ models/face_landmarker.task
 
 data/nr01/
 data/*.pdf
+
+# Build artifacts (PyInstaller)
+build/
+dist/
+*.spec.bak

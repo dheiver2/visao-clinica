@@ -10,6 +10,7 @@ processamento posterior (Dask).
 
 from __future__ import annotations
 
+import os
 import time
 from collections import defaultdict
 
@@ -22,8 +23,13 @@ try:
     import cv2
     import mediapipe as mp
     _MEDIAPIPE_OK = True
-except Exception:  # pragma: no cover - dependências opcionais em dev
+    _IMPORT_ERROR = None
+except Exception as _e:  # pragma: no cover - dependências opcionais em dev
     _MEDIAPIPE_OK = False
+    _IMPORT_ERROR = _e
+    if os.environ.get("VISAOCLINICA_DEBUG"):
+        import traceback
+        traceback.print_exc()
 
 
 class FeatureExtractor:

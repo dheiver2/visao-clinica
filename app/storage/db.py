@@ -6,7 +6,9 @@ import json
 import sqlite3
 from pathlib import Path
 
-DEFAULT_DB = Path(__file__).resolve().parents[2] / "data" / "sessions.db"
+from app.paths import data_path
+
+DEFAULT_DB = data_path("data", "sessions.db")
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS sessions (

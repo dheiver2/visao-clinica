@@ -72,9 +72,12 @@ def run_cli(mode: str, duration: float, use_llm: bool = False) -> int:
             report = "Triagem por indicadores determinísticos:\n" + "\n".join(
                 f"- {c.name}: {c.level} (score {c.score:.2f})"
                 for c in analysis.conditions)
-        export_pdf(report, analysis, "data/relatorio.pdf")
-        export_csv(features, analysis, "data/relatorio.csv")
-        print("Relatórios salvos em data/relatorio.pdf e data/relatorio.csv")
+        from app.paths import data_path
+        pdf_out = data_path("data", "relatorio.pdf")
+        csv_out = data_path("data", "relatorio.csv")
+        export_pdf(report, analysis, str(pdf_out))
+        export_csv(features, analysis, str(csv_out))
+        print(f"Relatórios salvos em {pdf_out} e {csv_out}")
 
     SessionStore().save(mode, features.to_dict(), analysis.to_dict())
     return 0

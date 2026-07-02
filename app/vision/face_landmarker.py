@@ -21,8 +21,11 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-MODEL_PATH = ROOT / "models" / "face_landmarker.task"
+from app.paths import bundled_models_dir, models_dir
+
+# Asset embutido no bundle (read-only); se ausente, baixa para a área gravável.
+_BUNDLED = bundled_models_dir() / "face_landmarker.task"
+MODEL_PATH = _BUNDLED if _BUNDLED.exists() else models_dir() / "face_landmarker.task"
 MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/face_landmarker/"
              "face_landmarker/float16/1/face_landmarker.task")
 

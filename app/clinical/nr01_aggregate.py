@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from app.clinical.nr01 import PSYCH_PANEL, PsychoIndicator, overall_risk
+from app.paths import user_data_dir
 
-STORE_DIR = Path(__file__).resolve().parents[2] / "data" / "nr01"
+STORE_DIR = user_data_dir() / "data" / "nr01"
 LEVELS = ("baixo", "moderado", "alto")
 
 
