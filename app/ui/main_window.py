@@ -382,9 +382,8 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
                 if p.factors else "Sem sinais relevantes.", confidence=1.0), True)
             cards_layout.insertWidget(i, card)
         try:
-            import os
-            os.makedirs("data", exist_ok=True)
-            out = "data/plano_acao_nr01.pdf"
+            from app.paths import data_path
+            out = str(data_path("data", "plano_acao_nr01.pdf"))
             export_nr01_pdf(ind, plan, out, risk_level=risk)
             # grava a sessão ANONIMIZADA (só níveis) na amostra do setor
             from app.clinical.nr01_aggregate import append_session
@@ -418,9 +417,8 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
                                 confidence=1.0, factors=[])
             cards_layout.insertWidget(i, _condition_card(c, True))
         try:
-            import os
-            os.makedirs("data", exist_ok=True)
-            out = f"data/relatorio_setor_{setor}.pdf"
+            from app.paths import data_path
+            out = str(data_path("data", f"relatorio_setor_{setor}.pdf"))
             # plano com base no fator prioritário (usa o template de alto risco)
             from app.clinical.nr01 import assess_psychosocial
             from app.vision.features import BiomarkerFeatures
@@ -434,8 +432,10 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
         status.setText(f"Relatório agregado do setor '{setor}' gerado.")
 
     def on_run():
-        # Modo ocupacional exige consentimento informado (LGPD) a cada sessão.
-        if "ocupacional" in mode_box.currentText() and not state.get("consent"):
+        # Modo ocupacional exige consentimento informado (LGPD) específico
+        # a cada sessão de análise, além do consentimento geral de abertura
+        # do app (_consent_gate, já concedido para ligar a câmera).
+        if "ocupacional" in mode_box.currentText() and not state.get("consent_nr01"):
             from PySide6.QtWidgets import QMessageBox
             box = QMessageBox(win)
             box.setWindowTitle("Consentimento — Uso Ocupacional (LGPD)")
@@ -451,7 +451,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
             if box.exec() != QMessageBox.Yes:
                 status.setText("Captura cancelada (sem consentimento).")
                 return
-            state["consent"] = True
+            state["consent_nr01"] = True
         log.clear(); clear_cards()
         set_running(True)
         status.setText("Analisando… olhe para a câmera (12s).")
@@ -479,6 +479,29 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     def on_close(ev):
         cam.stop(); cam.wait(2000); ev.accept()
     win.closeEvent = on_close
+
+    def _consent_gate() -> bool:
+        """Aviso de não-diagnóstico + consentimento de captura biométrica (LGPD),
+        exibido antes de ligar a webcam em QUALQUER modo — não só ocupacional."""
+        from PySide6.QtWidgets import QMessageBox
+        box = QMessageBox(win)
+        box.setWindowTitle("Aviso e consentimento — leia antes de continuar")
+        box.setIcon(QMessageBox.Warning)
+        box.setText(DISCLAIMER)
+        box.setInformativeText(
+            "Este app irá ativar sua webcam e processar imagens do seu rosto/corpo "
+            "para extrair biomarcadores (dado biométrico e de saúde, sensível pela "
+            "LGPD). Todo o processamento é 100% LOCAL — nada é enviado à internet "
+            "(veja PRIVACY.md). Nenhum vídeo bruto é salvo, apenas métricas "
+            "numéricas agregadas.\n\nVocê concorda em prosseguir com a captura?")
+        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        box.button(QMessageBox.Yes).setText("Concordo, continuar")
+        box.button(QMessageBox.No).setText("Cancelar")
+        return box.exec() == QMessageBox.Yes
+
+    if not _consent_gate():
+        return
+    state["consent"] = True
 
     win.show()
     cam.start()

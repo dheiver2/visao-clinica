@@ -179,6 +179,10 @@
         <span class="chip">🧠 BitNet b1.58 2B4T</span>
         <span class="chip">🎯 478 landmarks</span>
       </div>
+      <p class="muted" style="font-size:13px;margin-top:16px;max-width:480px">
+        ⚠️ Ferramenta de <strong>triagem e apoio à pesquisa</strong> — não constitui
+        diagnóstico médico. <a href="#limitacoes" style="text-decoration:underline">Ver limitações</a>.
+      </p>
     </div>
     <div class="mock reveal">
       <div class="bar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i>
@@ -341,12 +345,21 @@
       <a class="btn primary" href="mailto:dheiver.santos@gmail.com?subject=Demonstração%20Visão%20Clínica">Solicitar demonstração</a>
       <a class="btn ghost" href="https://github.com/dheiver2/visao-clinica" style="margin-left:10px">Repositório</a>
     </div>
-    <div class="disc reveal" style="margin-top:34px">
-      <strong>Aviso científico.</strong> Ferramenta de <strong>triagem e apoio à pesquisa</strong>.
+    <div id="limitacoes" class="disc reveal" style="margin-top:34px">
+      <strong>Aviso científico e limitações.</strong> Ferramenta de <strong>triagem e apoio à pesquisa</strong>.
       Os resultados <strong>não constituem diagnóstico médico</strong> e não substituem a avaliação de
-      profissionais de saúde. Os limiares baseiam-se em literatura, porém ainda não foram calibrados com
-      dataset clínico; condições como Síndrome de Down e autismo exigem avaliação especializada.
-      As fotos exibidas são de rostos gerados por IA (pessoas inexistentes), processados pelo MediaPipe.
+      profissionais de saúde.
+      <ul style="margin:12px 0 0 18px;padding:0;line-height:1.7">
+        <li>Os limiares dos indicadores são <strong>heurísticos, baseados em literatura</strong>, mas
+          <strong>ainda não foram calibrados</strong> em dataset clínico próprio.</li>
+        <li>Síndrome de Down e sinais de TEA dependem de avaliação especializada (morfologia
+          craniofacial, genética, avaliação comportamental) — o indicador é apenas auxiliar.</li>
+        <li>A acurácia varia com iluminação, qualidade da câmera e duração da captura; o app reporta
+          um nível de confiança por indicador e evita exibir resultados de baixa confiança.</li>
+        <li>Nenhum dado sai do dispositivo do usuário — processamento 100% local
+          (<a href="https://github.com/dheiver2/visao-clinica/blob/main/PRIVACY.md">detalhes de privacidade</a>).</li>
+      </ul>
+      <p style="margin-top:12px">As fotos exibidas são de rostos gerados por IA (pessoas inexistentes), processados pelo MediaPipe.</p>
     </div>
   </div>
 </section>

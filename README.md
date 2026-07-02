@@ -1,11 +1,18 @@
 # Visão Clínica — Triagem por Visão Computacional + IA Local (BitNet b1.58 2B4T)
 
+[![CI](https://github.com/dheiver2/visao-clinica/actions/workflows/ci.yml/badge.svg)](https://github.com/dheiver2/visao-clinica/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](pyproject.toml)
+[![Plataforma: macOS](https://img.shields.io/badge/plataforma-macOS-lightgrey.svg)](#compatibilidade-de-plataforma)
+
 Aplicação **desktop 100% local/offline** que extrai biomarcadores por webcam
 (OpenCV + MediaPipe) e usa o **BitNet b1.58 2B4T** como LLM local nativo para
 interpretação multimodal, raciocínio clínico probabilístico e geração de relatórios.
 
 > **Ferramenta de triagem e apoio à pesquisa.** Não constitui diagnóstico médico
 > e não substitui avaliação profissional. Veja [PROMPT.md](PROMPT.md) para a especificação completa.
+> Dados tratados: ver [PRIVACY.md](PRIVACY.md) (LGPD). Reportar vulnerabilidade: ver [SECURITY.md](SECURITY.md).
+> Contribuir: ver [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Arquitetura
 
@@ -120,9 +127,27 @@ bash scripts/make_app_bundle.sh
 ```
 Cria "Visão Clínica.app" no Desktop (ícone próprio + permissão de câmera). Duplo-clique para abrir.
 
+O `.app` gerado **não é assinado/notarizado** pela Apple (sem conta de
+desenvolvedor paga) — o Gatekeeper vai avisar no primeiro uso. Veja
+[RELEASING.md](RELEASING.md) para instruções de como abrir mesmo assim e
+como verificar o checksum do artefato publicado em releases oficiais.
+
+## Compatibilidade de plataforma
+
+O projeto é **desenvolvido e testado em macOS**. O bundle `.app`
+(`scripts/make_app_bundle.sh`) é macOS-only. Em Windows/Linux, é possível
+rodar via `./run.sh`/`python -m app.main` desde que as dependências
+(PySide6, OpenCV, MediaPipe, PyTorch) tenham build compatível para a
+plataforma — isso **não é testado em CI** hoje (o workflow de CI roda apenas
+em `macos-latest`) e pode exigir ajustes. Contribuições de suporte
+Windows/Linux são bem-vindas — veja [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Testes
 
 ```bash
-pip install pytest
-pytest -q
+pip install pytest pytest-cov
+pytest -q --cov=app --cov-report=term-missing
 ```
+
+CI roda testes e lint (`ruff`) automaticamente em todo push/PR — veja
+[.github/workflows/ci.yml](.github/workflows/ci.yml).

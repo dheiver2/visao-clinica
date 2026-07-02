@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    # torch/mediapipe/transformers têm pins deliberados (comentados em
+    # requirements.txt) por regressões conhecidas — revisar manualmente
+    # qualquer PR que mexa nessas linhas antes de fazer merge.
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

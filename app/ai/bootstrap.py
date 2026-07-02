@@ -20,9 +20,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-ROOT = Path(__file__).resolve().parents[2]
-MODELS_DIR = ROOT / "models"
-VENDOR_DIR = ROOT / "vendor"
+from app.paths import bundled_models_dir, models_dir, user_data_dir
+
+# Downloads e build vão para a área gravável do usuário (o bundle é read-only).
+MODELS_DIR = models_dir()
+BUNDLED_MODELS_DIR = bundled_models_dir()   # assets .gguf embutidos (se houver)
+VENDOR_DIR = user_data_dir() / "vendor"
 BITNET_DIR = VENDOR_DIR / "BitNet"
 
 MODEL_GGUF_REPO = "microsoft/BitNet-b1.58-2B-4T-gguf"
@@ -56,14 +59,14 @@ def _find_local_gguf() -> Path | None:
     env = os.environ.get("BITNET_MODEL_GGUF")
     if env and Path(env).exists():
         return Path(env)
-    # 2) qualquer GGUF i2_s já presente no projeto
-    for base in (MODELS_DIR, BITNET_DIR):
+    # 2) qualquer GGUF i2_s já presente (bundle ou área do usuário)
+    for base in (BUNDLED_MODELS_DIR, MODELS_DIR, BITNET_DIR):
         if base.exists():
             for p in base.rglob("*.gguf"):
                 if "i2_s" in p.name.lower():
                     return p
     # 3) qualquer GGUF como último recurso
-    for base in (MODELS_DIR, BITNET_DIR):
+    for base in (BUNDLED_MODELS_DIR, MODELS_DIR, BITNET_DIR):
         if base.exists():
             hits = list(base.rglob("*.gguf"))
             if hits:
@@ -84,7 +87,10 @@ def ensure_model(progress: ProgressFn | None = None,
     try:
         from huggingface_hub import snapshot_download
     except Exception:
-        _log(progress, "huggingface_hub indisponível — não foi possível baixar o GGUF.")
+        _log(progress, "huggingface_hub indisponível — instale com "
+                        "'pip install huggingface_hub' para permitir o "
+                        "download automático do modelo (ou baixe manualmente "
+                        f"'{MODEL_GGUF_REPO}' para {MODELS_DIR}).")
         return None
     _log(progress, f"Baixando modelo GGUF oficial ({MODEL_GGUF_REPO})…")
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
@@ -93,9 +99,26 @@ def ensure_model(progress: ProgressFn | None = None,
         snapshot_download(repo_id=MODEL_GGUF_REPO, local_dir=str(target),
                           allow_patterns=["*i2_s*.gguf", "*.gguf"])
     except Exception as e:  # noqa: BLE001
-        _log(progress, f"Falha ao baixar o modelo: {e}")
+        hint = _download_failure_hint(e)
+        _log(progress, f"Falha ao baixar o modelo: {e}{hint}")
         return None
     return _find_local_gguf()
+
+
+def _download_failure_hint(exc: Exception) -> str:
+    """Traduz erros comuns de download em orientação acionável para o usuário."""
+    msg = str(exc).lower()
+    if "connection" in msg or "network" in msg or "timeout" in msg or "resolve" in msg:
+        return (" — verifique sua conexão com a internet. O download só é "
+                "necessário na primeira execução; o app funciona offline depois.")
+    if "disk" in msg or "space" in msg or "errno 28" in msg:
+        return (f" — verifique espaço em disco livre em {MODELS_DIR} "
+                "(o modelo GGUF ocupa alguns GB).")
+    if "401" in msg or "403" in msg or "unauthorized" in msg or "gated" in msg:
+        return (" — o repositório pode exigir aceite de termos no Hugging Face; "
+                f"acesse https://huggingface.co/{MODEL_GGUF_REPO} logado e aceite, "
+                "ou faça login local com 'huggingface-cli login'.")
+    return " — tente novamente; se persistir, baixe o modelo manualmente (veja README.md)."
 
 
 # -- binário bitnet.cpp ---------------------------------------------------------
@@ -131,7 +154,10 @@ def ensure_binary(progress: ProgressFn | None = None,
         return None
     for tool in ("git", "cmake"):
         if not shutil.which(tool):
-            _log(progress, f"'{tool}' ausente — pulando build nativo (usará fallback).")
+            _log(progress, f"'{tool}' ausente — pulando build nativo do bitnet.cpp "
+                            f"(instale com 'brew install {tool}' para habilitar o backend "
+                            "nativo, mais rápido; o app segue funcional via fallback "
+                            "transformers, mais lento).")
             return None
     try:
         if not (BITNET_DIR / ".git").exists():
