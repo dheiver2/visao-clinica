@@ -35,11 +35,11 @@ def _arr(bs, key):
 
 def blink_rate(bs, fps, duration_s):
     """Piscadas/min pelos AUs eyeBlinkLeft/Right (limiar 0.5)."""
-    l, r = _arr(bs, "eyeBlinkLeft"), _arr(bs, "eyeBlinkRight")
-    n = min(l.size, r.size)
+    le, r = _arr(bs, "eyeBlinkLeft"), _arr(bs, "eyeBlinkRight")
+    n = min(le.size, r.size)
     if n < 3 or duration_s <= 0:
         return 0.0
-    closed = ((l[:n] + r[:n]) / 2.0 > 0.5).astype(int)
+    closed = ((le[:n] + r[:n]) / 2.0 > 0.5).astype(int)
     blinks = int(np.sum(np.diff(closed) == 1))
     return blinks / (duration_s / 60.0)
 

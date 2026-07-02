@@ -3,8 +3,8 @@
 Saídas: /tmp/preview_face.png e docs/assets/persona{1,2,3}.png
 """
 import glob
+
 import cv2
-import numpy as np
 import mediapipe as mp
 from PIL import Image, ImageDraw, ImageFont
 
@@ -41,7 +41,7 @@ def make_preview(path, out, size=(560, 420)):
     """Rosto real recortado para a área de preview do app, com bbox."""
     img, (x0, y0, x1, y1) = process(path)
     cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
-    half_w = int((x1 - x0) * 0.95); half_h = int((y1 - y0) * 0.75)
+    half_h = int((y1 - y0) * 0.75)
     L = max(cx - int(size[0] / size[1] * half_h), 0); R = min(cx + int(size[0] / size[1] * half_h), img.size[0])
     T = max(cy - half_h - 30, 0); B = min(cy + half_h + 40, img.size[1])
     face = img.crop((L, T, R, B)).resize(size)

@@ -90,10 +90,10 @@ def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado"):
 
 def export_nr01_aggregate_pdf(report, plan, out_path):
     """Relatório AGREGADO e anonimizado por setor (NR-01) em PDF."""
+    from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-    from reportlab.lib import colors
 
     from app.clinical.nr01 import DISCLAIMER_NR01
 

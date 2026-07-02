@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 try:
-    from scipy.signal import find_peaks, welch
+    from scipy.signal import find_peaks
     _SCIPY = True
 except Exception:  # pragma: no cover
     _SCIPY = False
@@ -37,19 +37,19 @@ def pos_pulse(rgb: np.ndarray, fps: float) -> np.ndarray:
     if rgb.ndim != 2 or rgb.shape[0] < 16:
         return np.zeros(max(rgb.shape[0], 0))
     n = rgb.shape[0]
-    l = max(int(fps * 1.6), 8)        # janela ~1.6 s (Wang et al.)
+    win_len = max(int(fps * 1.6), 8)  # janela ~1.6 s (Wang et al.)
     h = np.zeros(n)
     proj = np.array([[0.0, 1.0, -1.0], [-2.0, 1.0, 1.0]])
-    for m in range(0, n - l):
-        win = rgb[m:m + l]
+    for m in range(0, n - win_len):
+        win = rgb[m:m + win_len]
         mu = win.mean(axis=0)
         mu[mu == 0] = 1e-9
         cn = win / mu                 # normalização temporal
-        s = proj @ cn.T               # projeção ortogonal à pele (2 x l)
+        s = proj @ cn.T               # projeção ortogonal à pele (2 x win_len)
         std1 = s[1].std() or 1e-9
         p = s[0] + (s[0].std() / std1) * s[1]
         p = p - p.mean()
-        h[m:m + l] += p               # overlap-add
+        h[m:m + win_len] += p         # overlap-add
     return h
 
 

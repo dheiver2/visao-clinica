@@ -121,8 +121,17 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
     from PySide6.QtCore import Qt
     from PySide6.QtGui import QPixmap
     from PySide6.QtWidgets import (
-        QApplication, QCheckBox, QComboBox, QFrame, QHBoxLayout, QLabel,
-        QProgressBar, QPushButton, QScrollArea, QTextEdit, QVBoxLayout, QWidget,
+        QApplication,
+        QCheckBox,
+        QComboBox,
+        QHBoxLayout,
+        QLabel,
+        QProgressBar,
+        QPushButton,
+        QScrollArea,
+        QTextEdit,
+        QVBoxLayout,
+        QWidget,
     )
 
     from app.clinical.reasoning_engine import ClinicalReasoningEngine
@@ -363,8 +372,7 @@ def launch_gui(default_mode: str = "pesquisa") -> int:
             nw.start()
 
     def on_occupational(features):
-        from app.clinical.nr01 import (action_plan, assess_psychosocial,
-                                       overall_risk)
+        from app.clinical.nr01 import action_plan, assess_psychosocial, overall_risk
         from app.report.exporter import export_nr01_pdf
         ind = assess_psychosocial(features)
         risk = overall_risk(ind)

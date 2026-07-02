@@ -1,7 +1,10 @@
 """Testa o módulo ocupacional NR-01 (riscos psicossociais + plano de ação)."""
 
 from app.clinical.nr01 import (
-    action_plan, assess_psychosocial, overall_risk, PSYCH_PANEL,
+    PSYCH_PANEL,
+    action_plan,
+    assess_psychosocial,
+    overall_risk,
 )
 from app.vision.features import BiomarkerFeatures
 

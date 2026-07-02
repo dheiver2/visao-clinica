@@ -49,7 +49,10 @@ extend-exclude = ["build", "dist", ".venv", "vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+# E501: comprimento de linha não é imposto neste projeto.
+# E701/E702: o estilo do projeto usa `;` para agrupar atribuições correlatas
+# em uma linha (ex: coordenadas de bbox) — decisão de estilo, não bug.
+ignore = ["E501", "E701", "E702"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

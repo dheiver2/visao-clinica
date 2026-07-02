@@ -236,9 +236,9 @@ class FeatureExtractor:
     @staticmethod
     def _eye_aspect_ratio(lm) -> float:
         """EAR aproximado do olho esquerdo para detecção de piscadas."""
-        top, bottom, l, r = lm[159], lm[145], lm[33], lm[133]
+        top, bottom, lx, r = lm[159], lm[145], lm[33], lm[133]
         v = abs(top.y - bottom.y)
-        h = abs(l.x - r.x)
+        h = abs(lx.x - r.x)
         return v / max(h, 1e-6)
 
     @staticmethod

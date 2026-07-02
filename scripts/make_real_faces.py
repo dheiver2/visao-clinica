@@ -5,8 +5,8 @@ Entradas: /tmp/real_face_{1..5}.jpg
 Saídas: docs/assets/face_mesh.png (hero) e real_var{1,2,3}.png (galeria)
 """
 import glob
+
 import cv2
-import numpy as np
 import mediapipe as mp
 from PIL import Image, ImageDraw, ImageFont
 

@@ -26,7 +26,7 @@ def test_percentages_sum_per_factor():
     sessions = [_high_stress(), _high_stress(), _low()]
     rep = aggregate("Operações", sessions=sessions)
     assert rep.n == 3
-    for fator, dist in rep.by_factor.items():
+    for _fator, dist in rep.by_factor.items():
         assert abs(sum(dist.values()) - 100.0) < 0.5
 
 

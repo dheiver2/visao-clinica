@@ -53,7 +53,6 @@ def main_sequence_slope(gx, gy, fps: float, vel_thresh: float = 2.0):
             j = i
             while j < n and active[j]:
                 j += 1
-            seg = slice(i, j + 1)
             amp = float(np.hypot(gx[i:j + 1][-1] - gx[i:j + 1][0],
                                  gy[i:j + 1][-1] - gy[i:j + 1][0]))
             pv = float(vel[i:j].max()) if j > i else 0.0

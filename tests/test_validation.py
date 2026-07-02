@@ -1,6 +1,5 @@
 """Testa a validação de sessão e o gating por acurácia (média/alta)."""
 
-from app.clinical.conditions import evaluate_conditions
 from app.clinical.reasoning_engine import ClinicalReasoningEngine
 from app.clinical.validation import accuracy_band, is_displayable, validate_session
 from app.vision.features import BiomarkerFeatures

@@ -1,10 +1,20 @@
 """Gera docs/assets/face_mesh.png — rosto realista com malha de landmarks no app."""
 import numpy as np
-from scipy.spatial import Delaunay
-from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import (QImage, QPainter, QColor, QPen, QBrush, QRadialGradient,
-    QLinearGradient, QFont, QPainterPath, QPolygonF)
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QImage,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPolygonF,
+    QRadialGradient,
+)
 from PySide6.QtWidgets import QApplication
+from scipy.spatial import Delaunay
 
 app = QApplication([])
 W, H = 960, 600

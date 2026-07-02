@@ -16,9 +16,9 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from app.paths import bundled_models_dir, models_dir, user_data_dir
 
