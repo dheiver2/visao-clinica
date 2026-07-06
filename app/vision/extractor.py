@@ -16,7 +16,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from . import blendshape_features, motor_face, oculomotor, rppg, signal
+from . import blendshape_features, motor_face, oculomotor, signal, vitals
 from .features import BiomarkerFeatures
 
 try:
@@ -149,13 +149,53 @@ class FeatureExtractor:
 
     # -- processamento por frame -------------------------------------------------
 
+    def _capture_guidance(self, rgb):
+        """Feedback de enquadramento em tempo real (posição/luz/distância).
+
+        Paridade com a UX de captura dos apps de vitais (Binah/Anura): orienta o
+        usuário a se posicionar bem ANTES/DURANTE a análise, elevando a qualidade
+        do sinal. Retorna (mensagem, cor_bgr, ok).
+        """
+        good = (60, 220, 140)     # verde
+        warn = (80, 190, 255)     # âmbar
+        bad = (108, 93, 255)      # vermelho
+        if self._last_face is None:
+            return "Rosto nao detectado — posicione-se na camera", bad, False
+        xs = [p.x for p in self._last_face.landmark]
+        ys = [p.y for p in self._last_face.landmark]
+        fw = max(xs) - min(xs)
+        cx = (min(xs) + max(xs)) / 2.0
+        cy = (min(ys) + max(ys)) / 2.0
+        lum = float(rgb.mean())
+        if fw < 0.22:
+            return "Aproxime-se da camera", warn, False
+        if fw > 0.75:
+            return "Afaste-se um pouco", warn, False
+        if abs(cx - 0.5) > 0.18 or abs(cy - 0.5) > 0.20:
+            return "Centralize o rosto", warn, False
+        if lum < 55:
+            return "Ambiente escuro — melhore a iluminacao", warn, False
+        if lum > 210:
+            return "Muita luz — reduza o brilho/contraluz", warn, False
+        return "Enquadramento otimo — pode analisar", good, True
+
     def _draw_overlay(self, rgb):
         """Desenha a malha de landmarks (tesselação) e a bounding box sobre o frame,
         para o preview ao vivo mostrar a análise acontecendo no usuário."""
-        if not _MEDIAPIPE_OK or self._last_face is None:
+        if not _MEDIAPIPE_OK:
             return rgb
         out = rgb.copy()
         h, w = out.shape[:2]
+
+        # Banner de captura guiada (sempre visível, mesmo sem rosto).
+        msg, color, ok = self._capture_guidance(rgb)
+        cv2.rectangle(out, (0, 0), (w, 34), (18, 20, 26), -1)
+        cv2.circle(out, (18, 17), 6, color, -1)
+        cv2.putText(out, msg, (34, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+                    color, 1, cv2.LINE_AA)
+
+        if self._last_face is None:
+            return out
         mp.solutions.drawing_utils.draw_landmarks(
             image=out,
             landmark_list=self._last_face,
@@ -167,9 +207,7 @@ class FeatureExtractor:
         ys = [p.y for p in self._last_face.landmark]
         x0, y0 = int(min(xs) * w), int(min(ys) * h)
         x1, y1 = int(max(xs) * w), int(max(ys) * h)
-        cv2.rectangle(out, (x0, y0), (x1, y1), (76, 141, 255), 2)
-        cv2.putText(out, "ROSTO DETECTADO", (x0, max(y0 - 8, 12)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (76, 141, 255), 1, cv2.LINE_AA)
+        cv2.rectangle(out, (x0, y0), (x1, y1), color, 2)
         return out
 
     def _process_frame(self, rgb) -> None:
@@ -325,7 +363,8 @@ class FeatureExtractor:
                                self._series.get("roi_g", []),
                                self._series.get("roi_b", [])]) \
             if self._series.get("roi_g") else np.empty((0, 3))
-        hr_bpm, hrv_ms, rppg_q = rppg.estimate(roi, fps)
+        vit = vitals.compute(roi, fps)
+        hr_bpm, hrv_ms, rppg_q = vit.heart_rate_bpm, vit.hrv_sdnn_ms, vit.quality
         bcea = oculomotor.fixation_bcea(self._series.get("gaze_x", []),
                                         self._series.get("gaze_y", []))
         ms_slope, _ = oculomotor.main_sequence_slope(
@@ -371,6 +410,11 @@ class FeatureExtractor:
             heart_rate_bpm=hr_bpm,
             hrv_sdnn_ms=hrv_ms,
             rppg_quality=rppg_q,
+            respiration_bpm=vit.respiration_bpm,
+            hrv_rmssd_ms=vit.hrv_rmssd_ms,
+            hrv_pnn50=vit.hrv_pnn50,
+            lf_hf_ratio=vit.lf_hf_ratio,
+            stress_index=vit.stress_index,
             fixation_bcea=bcea,
             saccade_main_seq_slope=ms_slope,
             hypomimia_index=hypomimia,

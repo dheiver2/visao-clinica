@@ -3,11 +3,62 @@
 from __future__ import annotations
 
 import csv
+from datetime import datetime
 from pathlib import Path
 
 from app import DISCLAIMER
 from app.clinical.reasoning_engine import ClinicalAnalysis
 from app.vision.features import BiomarkerFeatures
+
+
+def make_protocol(prefix: str = "VC") -> str:
+    """Número de protocolo do relatório (rastreabilidade — exigido em editais)."""
+    return f"{prefix}-{datetime.now():%Y%m%d-%H%M%S}"
+
+
+def _institution_header(inst: dict | None, styles) -> list:
+    """Cabeçalho com identificação do órgão (logo + nome + CNPJ)."""
+    if not inst or not (inst.get("nome") or inst.get("cnpj")):
+        return []
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Image, Paragraph, Spacer, Table, TableStyle
+
+    nome = inst.get("nome") or ""
+    cnpj = f"CNPJ: {inst['cnpj']}" if inst.get("cnpj") else ""
+    txt = Paragraph(f"<b>{nome}</b><br/>{cnpj}", styles["Normal"])
+    logo_path = inst.get("logo_path") or ""
+    cell0 = txt
+    cols = [txt]
+    if logo_path and Path(logo_path).exists():
+        try:
+            cell0 = Image(logo_path, width=18 * mm, height=18 * mm)
+            cols = [cell0, txt]
+        except Exception:  # noqa: BLE001 - logo inválida não bloqueia o relatório
+            cols = [txt]
+    tbl = Table([cols], hAlign="LEFT")
+    tbl.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEBELOW", (0, 0), (-1, -1), 0.6, colors.grey),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+    return [tbl, Spacer(1, 10)]
+
+
+def _institution_footer(inst: dict | None, protocol: str, styles) -> list:
+    """Rodapé com responsável técnico, registro no conselho e protocolo."""
+    from reportlab.platypus import Paragraph, Spacer
+
+    parts = [f"Protocolo: {protocol}",
+             f"Emitido em: {datetime.now():%d/%m/%Y %H:%M}"]
+    if inst:
+        if inst.get("responsavel"):
+            parts.append(f"Responsável técnico: {inst['responsavel']}")
+        if inst.get("conselho"):
+            parts.append(f"Registro: {inst['conselho']}")
+    return [Spacer(1, 12),
+            Paragraph("<font size=8 color='#666666'>" + " · ".join(parts) + "</font>",
+                      styles["Normal"])]
 
 
 def export_csv(features: BiomarkerFeatures, analysis: ClinicalAnalysis,
@@ -28,17 +79,27 @@ def export_csv(features: BiomarkerFeatures, analysis: ClinicalAnalysis,
 
 
 def export_pdf(report_text: str, analysis: ClinicalAnalysis,
-               out_path: str | Path) -> Path:
+               out_path: str | Path, institution: dict | None = None,
+               protocol: str | None = None) -> Path:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
     out_path = Path(out_path)
+    protocol = protocol or make_protocol()
     doc = SimpleDocTemplate(str(out_path), pagesize=A4)
     styles = getSampleStyleSheet()
-    flow = [
+    flow = _institution_header(institution, styles) + [
         Paragraph("Relatório Técnico — Triagem por Visão Computacional", styles["Title"]),
         Paragraph(f"Nível de risco global: <b>{analysis.risk_level}</b>", styles["Normal"]),
+    ]
+    w = getattr(analysis, "wellness", None) or {}
+    if w.get("reliable"):
+        flow.append(Paragraph(
+            f"Índice de bem-estar: <b>{int(w.get('score', 0))}/100</b> "
+            f"({w.get('label', '—')}) · estresse estimado {int(w.get('stress', 0))}%",
+            styles["Normal"]))
+    flow += [
         Spacer(1, 10),
         Paragraph("Indicadores clínicos de triagem por condição:", styles["Heading3"]),
     ]
@@ -52,11 +113,13 @@ def export_pdf(report_text: str, analysis: ClinicalAnalysis,
         flow.append(Spacer(1, 8))
     flow.append(Spacer(1, 12))
     flow.append(Paragraph(f"<i>{DISCLAIMER}</i>", styles["Italic"]))
+    flow += _institution_footer(institution, protocol, styles)
     doc.build(flow)
     return out_path
 
 
-def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado"):
+def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado",
+                    institution=None, protocol=None):
     """Gera o relatório PDF do plano de ação NR-01 (riscos psicossociais)."""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
@@ -65,9 +128,10 @@ def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado"):
     from app.clinical.nr01 import DISCLAIMER_NR01
 
     out_path = Path(out_path)
+    protocol = protocol or make_protocol("NR01")
     doc = SimpleDocTemplate(str(out_path), pagesize=A4)
     st = getSampleStyleSheet()
-    flow = [
+    flow = _institution_header(institution, st) + [
         Paragraph("Plano de Ação — NR-01 (Riscos Psicossociais)", st["Title"]),
         Paragraph(f"Nível de risco psicossocial: <b>{risk_level.upper()}</b>", st["Normal"]),
         Spacer(1, 10),
@@ -84,11 +148,12 @@ def export_nr01_pdf(indicators, plan, out_path, risk_level="indeterminado"):
         flow.append(Spacer(1, 6))
     flow.append(Spacer(1, 12))
     flow.append(Paragraph(f"<i>{DISCLAIMER_NR01}</i>", st["Italic"]))
+    flow += _institution_footer(institution, protocol, st)
     doc.build(flow)
     return out_path
 
 
-def export_nr01_aggregate_pdf(report, plan, out_path):
+def export_nr01_aggregate_pdf(report, plan, out_path, institution=None, protocol=None):
     """Relatório AGREGADO e anonimizado por setor (NR-01) em PDF."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -98,9 +163,10 @@ def export_nr01_aggregate_pdf(report, plan, out_path):
     from app.clinical.nr01 import DISCLAIMER_NR01
 
     out_path = Path(out_path)
+    protocol = protocol or make_protocol("NR01AG")
     doc = SimpleDocTemplate(str(out_path), pagesize=A4)
     st = getSampleStyleSheet()
-    flow = [
+    flow = _institution_header(institution, st) + [
         Paragraph(f"Relatório Agregado NR-01 — Setor: {report.setor}", st["Title"]),
         Paragraph(f"Amostra: <b>{report.n}</b> triagens voluntárias (anonimizadas)", st["Normal"]),
         Spacer(1, 8),
@@ -131,5 +197,6 @@ def export_nr01_aggregate_pdf(report, plan, out_path):
         flow.append(Spacer(1, 6))
     flow.append(Spacer(1, 10))
     flow.append(Paragraph(f"<i>{DISCLAIMER_NR01}</i>", st["Italic"]))
+    flow += _institution_footer(institution, protocol, st)
     doc.build(flow)
     return out_path

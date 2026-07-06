@@ -48,6 +48,13 @@ class BiomarkerFeatures:
     heart_rate_bpm: float = 0.0          # rPPG (POS, Wang et al. 2017)
     hrv_sdnn_ms: float = 0.0             # VFC (SDNN) sem contato
     rppg_quality: float = 0.0            # confiabilidade do sinal rPPG
+
+    # Sinais vitais expandidos (rPPG) — paridade com apps de vitais por webcam
+    respiration_bpm: float = 0.0         # frequência respiratória (RIIV)
+    hrv_rmssd_ms: float = 0.0            # VFC RMSSD (tônus parassimpático)
+    hrv_pnn50: float = 0.0              # VFC pNN50 (0..1)
+    lf_hf_ratio: float = 0.0            # balanço autonômico LF/HF
+    stress_index: float = 0.0          # índice de estresse de Baevsky
     fixation_bcea: float = 0.0          # estabilidade de fixação (Anderson 2013)
     saccade_main_seq_slope: float = 0.0  # main sequence (Bahill 1975)
     hypomimia_index: float = 0.0        # hipomimia FACS (Bandini 2017)

@@ -21,6 +21,7 @@ class ClinicalAnalysis:
     influential_variables: list[str] = field(default_factory=list)
     risk_level: str = "indeterminado"  # baixo | moderado | alto | indeterminado
     conditions: list[ConditionResult] = field(default_factory=list)
+    wellness: dict = field(default_factory=dict)   # score de bem-estar 0–100
     raw: str = ""
 
     def to_dict(self) -> dict:
@@ -94,11 +95,16 @@ class ClinicalReasoningEngine:
 
         Esta é a saída clínica primária. Não depende do modelo e roda em ms.
         """
+        from dataclasses import asdict
+
+        from app.clinical.wellness import compute_wellness
+
         conditions = evaluate_conditions(features)
         order = {"indeterminado": -1, "baixo": 0, "moderado": 1, "alto": 2}
         risk = max((c.level for c in conditions),
                    key=lambda lv: order.get(lv, -1), default="indeterminado")
-        analysis = ClinicalAnalysis(conditions=conditions, risk_level=risk)
+        analysis = ClinicalAnalysis(conditions=conditions, risk_level=risk,
+                                    wellness=asdict(compute_wellness(features)))
         # Hipóteses derivadas do painel (garantidas, sem LLM).
         analysis.hypotheses = [
             f"{c.name}: risco {c.level}" for c in analysis.top_conditions]

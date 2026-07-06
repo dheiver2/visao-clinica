@@ -44,7 +44,11 @@ a = Analysis(
     pathex=[str(PROJ)],
     binaries=binaries,
     datas=datas,
-    hiddenimports=["app", "app.ui.main_window"],
+    hiddenimports=[
+        "app", "app.ui.main_window", "app.ui.settings",
+        "app.security", "app.security.governance",
+        "app.vision.vitals", "app.clinical.wellness",
+    ],
     hookspath=[],
     runtime_hooks=[],
     excludes=[

@@ -6,6 +6,31 @@ Este projeto segue [SemVer](https://semver.org/lang/pt-BR/) a partir da v0.1.0.
 ## [Não lançado]
 
 ### Adicionado
+- **Conformidade para licitação (editais públicos):**
+  - **Controle de acesso por perfil** — login local com perfis administrador/
+    profissional/pesquisador, senha com hash PBKDF2-HMAC-SHA256, política de senha
+    e **timeout de sessão** por inatividade (`app/security/governance.py`).
+  - **Trilha de auditoria (LGPD)** — log append-only de eventos (login, análise,
+    consentimento, exportação, backup, gestão de usuários) com usuário e data/hora,
+    visualizável e exportável em CSV.
+  - **Personalização institucional** — nome/CNPJ/logo do órgão e responsável
+    técnico, com **cabeçalho, rodapé e número de protocolo** nos relatórios PDF.
+  - **Acessibilidade (eMAG/WCAG)** — ajuste de fonte (A-/A+), tema de alto
+    contraste e atalhos de teclado.
+  - **Backup e restauração** dos dados locais (API de backup do SQLite).
+- **Sinais vitais expandidos por rPPG** (paridade com apps de vitais por câmera —
+  Binah.ai, NuraLogix Anura, MX Labs shen.ai): frequência respiratória (RIIV),
+  VFC avançada (SDNN, RMSSD, pNN50), balanço autonômico LF/HF e índice de
+  estresse de Baevsky — todos derivados do sinal de pulso já existente
+  (`app/vision/vitals.py`).
+- **Score de bem-estar/estresse (0–100)**: índice-síntese determinístico que
+  combina FC, VFC, respiração e sinais faciais (`app/clinical/wellness.py`),
+  exibido como faixa de vitais no painel e incluído no relatório PDF.
+- **Captura guiada em tempo real**: banner de orientação no preview da câmera
+  (posição, distância e iluminação) para elevar a qualidade do sinal.
+- **Histórico & tendências longitudinais**: sessões são salvas offline (SQLite) e
+  o botão "Histórico" abre gráficos de evolução (bem-estar, FC, estresse) + tabela.
+
 - Preparação para publicação pública: LICENSE (MIT), `PRIVACY.md`,
   `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `RELEASING.md`.
 - CI (GitHub Actions) rodando `pytest` + `ruff` a cada push/PR.

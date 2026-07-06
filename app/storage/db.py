@@ -40,5 +40,30 @@ class SessionStore:
         self._conn.commit()
         return int(cur.lastrowid)
 
+    def recent(self, limit: int = 50, mode: str | None = None) -> list[dict]:
+        """Últimas sessões (mais recentes primeiro) com features/analysis já decodificados."""
+        sql = ("SELECT id, created_at, mode, features_json, analysis_json, risk_level "
+               "FROM sessions")
+        params: tuple = ()
+        if mode:
+            sql += " WHERE mode = ?"
+            params = (mode,)
+        sql += " ORDER BY id DESC LIMIT ?"
+        params = params + (int(limit),)
+        rows = self._conn.execute(sql, params).fetchall()
+        out: list[dict] = []
+        for rid, created, md, fj, aj, risk in rows:
+            try:
+                feats = json.loads(fj) if fj else {}
+            except json.JSONDecodeError:
+                feats = {}
+            try:
+                analysis = json.loads(aj) if aj else {}
+            except json.JSONDecodeError:
+                analysis = {}
+            out.append({"id": rid, "created_at": created, "mode": md,
+                        "features": feats, "analysis": analysis, "risk_level": risk})
+        return out
+
     def close(self) -> None:
         self._conn.close()
