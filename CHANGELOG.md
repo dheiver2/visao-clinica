@@ -3,7 +3,33 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 Este projeto segue [SemVer](https://semver.org/lang/pt-BR/) a partir da v0.1.0.
 
-## [Não lançado]
+## [2.0.0] — Reescrita 100% nativa macOS (Swift/SwiftUI)
+
+### Alterado (BREAKING)
+- **Todo o app foi reescrito de Python para Swift/SwiftUI nativo.** Não há mais
+  Python: cada dependência foi trocada por framework nativo da Apple —
+  PySide6→**SwiftUI**, OpenCV→**AVFoundation**, MediaPipe→**Vision**,
+  NumPy/SciPy→**Swift/Accelerate**, sqlite3→**SQLite3**, hashlib→**CommonCrypto**.
+- O bundle caiu de ~775 MB (PyInstaller) para **~576 KB** (usa frameworks do sistema).
+- Build agora via `swift build` / `scripts/build_macos.sh`; validação via
+  `VisaoClinica --selftest` (roda com Command Line Tools, sem Xcode).
+- CI passa a rodar `swift build` + self-test em `macos-14`.
+
+### Presente na v2.0 nativa
+- Captura guiada, vitais rPPG (FC, respiração, VFC, LF/HF, estresse de Baevsky),
+  score de bem-estar 0–100, painel clínico determinístico, controle de acesso por
+  perfil (PBKDF2), trilha de auditoria (LGPD) e histórico — tudo em SQLite local.
+
+### Roadmap de paridade (portando do legado Python)
+- NR-01 ocupacional, PDF (PDFKit) + personalização institucional, gestão completa
+  de usuários/auditoria na UI, acessibilidade eMAG, backup/restauração, as 12
+  condições completas e narrativa LLM local (MLX).
+
+### Removido
+- Código Python (`app/`, `tests/`), PyInstaller (`VisaoClinica.spec`),
+  `requirements.txt`, `pyproject.toml`, `run.sh`, scripts de geração e `bitnet.cpp`.
+
+## [Não lançado — histórico do app Python legado]
 
 ### Adicionado
 - **Conformidade para licitação (editais públicos):**

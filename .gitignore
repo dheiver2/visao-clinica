@@ -1,24 +1,26 @@
+# Swift / SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# App bundle / distribuição
+dist/
+*.dmg
+
+# Dados do usuário (gerados em ~/Library/Application Support/VisaoClinica)
+data/
+*.db
+
+# Modelos (não versionar — pesados; o app nativo usa o framework Vision)
+models/
+*.gguf
+*.task
+vendor/
+
+.DS_Store
+
+# Resíduos do app Python legado (não versionar se reaparecerem localmente)
 __pycache__/
 *.pyc
 .venv/
 venv/
-data/*.db
-data/*.pdf
-data/*.csv
-models/
-*.gguf
-.DS_Store
-
-# script de validação temporário
-scripts/e2e_llm.py
-
-models/*.task
-models/face_landmarker.task
-
-data/nr01/
-data/*.pdf
-
-# Build artifacts (PyInstaller)
-build/
-dist/
-*.spec.bak
