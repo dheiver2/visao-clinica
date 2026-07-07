@@ -19,10 +19,14 @@ final class AppDatabase {
     private var db: OpaquePointer?
     private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-    init() {
+    convenience init() {
         let dir = Self.dataDir()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let path = dir.appendingPathComponent("visaoclinica.db").path
+        self.init(path: dir.appendingPathComponent("visaoclinica.db").path)
+    }
+
+    /// Inicializador com caminho explícito (usado por testes com banco isolado).
+    init(path: String) {
         sqlite3_open(path, &db)
         exec("""
         CREATE TABLE IF NOT EXISTS sessions (
