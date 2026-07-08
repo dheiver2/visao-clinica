@@ -53,7 +53,8 @@ final class AppModel: ObservableObject {
             Task { @MainActor in self?.waveform = w }
         }
         NotificationCenter.default.addObserver(forName: .analyzeNow, object: nil, queue: .main) {
-            [weak self] _ in Task { @MainActor in self?.analyzeIfPossible() }
+            [weak self] _ in
+            MainActor.assumeIsolated { self?.analyzeIfPossible() }   // já na fila .main
         }
     }
 
