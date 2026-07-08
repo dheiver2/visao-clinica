@@ -30,6 +30,7 @@ final class AppModel: ObservableObject {
     let camera = CameraController()
 
     init() {
+        db.ensureDefaultAdmin()               // semeia admin/admin se vazio
         needsFirstAdmin = db.userCount() == 0
         camera.onGuidance = { [weak self] msg, ok in
             Task { @MainActor in self?.guidanceText = msg; self?.guidanceOK = ok }

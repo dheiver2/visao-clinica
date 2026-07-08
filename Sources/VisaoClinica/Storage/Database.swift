@@ -105,18 +105,30 @@ final class AppDatabase {
         if u.isEmpty { return "Informe um nome de usuário." }
         if !ROLES.contains(role) { return "Perfil inválido." }
         if let e = validatePassword(password) { return e }
+        return insertUser(u, password, role: role) ? nil : "Já existe um usuário com esse nome."
+    }
+
+    /// Inserção direta (sem política de senha) — usada pelo seed do admin padrão.
+    @discardableResult
+    private func insertUser(_ username: String, _ password: String, role: String) -> Bool {
         let salt = Crypto.randomSalt()
         let hash = Crypto.pbkdf2(password: password, salt: salt)
         var st: OpaquePointer?
         let sql = "INSERT INTO users (username, salt, pwd_hash, role) VALUES (?,?,?,?)"
-        guard sqlite3_prepare_v2(db, sql, -1, &st, nil) == SQLITE_OK else { return "Erro ao preparar." }
-        sqlite3_bind_text(st, 1, u, -1, SQLITE_TRANSIENT)
+        guard sqlite3_prepare_v2(db, sql, -1, &st, nil) == SQLITE_OK else { return false }
+        sqlite3_bind_text(st, 1, username, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(st, 2, Crypto.hex(salt), -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(st, 3, Crypto.hex(hash), -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(st, 4, role, -1, SQLITE_TRANSIENT)
         let rc = sqlite3_step(st)
         sqlite3_finalize(st)
-        return rc == SQLITE_DONE ? nil : "Já existe um usuário com esse nome."
+        return rc == SQLITE_DONE
+    }
+
+    /// Semeia um administrador padrão (admin/admin) se não houver nenhum usuário.
+    /// ⚠️ Credencial de conveniência — recomenda-se trocar no primeiro acesso.
+    func ensureDefaultAdmin() {
+        if userCount() == 0 { insertUser("admin", "admin", role: "administrador") }
     }
 
     /// Retorna o perfil se as credenciais conferem; caso contrário, nil.

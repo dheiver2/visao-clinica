@@ -16,8 +16,8 @@ struct ContentView: View {
 
 struct LoginView: View {
     @EnvironmentObject var m: AppModel
-    @State private var user = ""
-    @State private var pw = ""
+    @State private var user = "admin"
+    @State private var pw = "admin"
     @State private var confirm = ""
 
     var body: some View {
