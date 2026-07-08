@@ -5,8 +5,12 @@ import SwiftUI
 @main
 enum Entry {
     static func main() {
-        if CommandLine.arguments.contains("--selftest") {
+        let args = CommandLine.arguments
+        if args.contains("--selftest") {
             SelfTest.run()   // não retorna (exit)
+        }
+        if let i = args.firstIndex(of: "--make-icon"), i + 1 < args.count {
+            IconGenerator.write(to: args[i + 1])   // não retorna (exit)
         }
         VisaoClinicaApp.main()
     }
@@ -21,5 +25,16 @@ struct VisaoClinicaApp: App {
             ContentView().environmentObject(model)
         }
         .windowResizability(.contentMinSize)
+        .commands {
+            CommandGroup(replacing: .newItem) {}   // remove "New Window"
+            CommandMenu("Análise") {
+                Button("Analisar agora") {
+                    NotificationCenter.default.post(name: .analyzeNow, object: nil)
+                }
+                .keyboardShortcut("r", modifiers: .command)
+                Button("Histórico & Tendências…") { model.showHistory = true }
+                    .keyboardShortcut("h", modifiers: [.command, .shift])
+            }
+        }
     }
 }

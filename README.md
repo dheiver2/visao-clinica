@@ -54,15 +54,18 @@ acesso) e o **consentimento de câmera** (LGPD).
 
 ## Funcionalidades (versão nativa)
 
-- **Captura guiada** em tempo real (posição, distância e iluminação).
+- **Captura guiada** em tempo real (posição, distância e iluminação) com **onda de
+  pulso ao vivo** (Canvas) sobre o preview.
 - **Sinais vitais sem contato** por rPPG (método POS): frequência cardíaca,
   respiração (RIIV), VFC (SDNN/RMSSD/pNN50), balanço LF/HF e índice de estresse de Baevsky.
 - **Score de bem-estar (0–100)** — síntese determinística.
 - **Painel clínico determinístico** por condição (estresse/ansiedade, sonolência,
   assimetria facial) com nível de risco e racional.
+- **Histórico & tendências** com **Swift Charts** (evolução de bem-estar e FC).
 - **Controle de acesso por perfil** (administrador/profissional/pesquisador) com
   PBKDF2 e **trilha de auditoria (LGPD)** em SQLite.
-- **Histórico** de sessões offline.
+- Acabamento nativo: **ícone próprio**, **menus/atalhos ⌘** (⌘R analisar,
+  ⇧⌘H histórico), **SF Symbols**, UX de **permissão de câmera** e **binário universal**.
 
 ## Roadmap de paridade (portando do app Python legado)
 

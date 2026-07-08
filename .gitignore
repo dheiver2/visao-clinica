@@ -6,6 +6,7 @@ Package.resolved
 # App bundle / distribuição
 dist/
 *.dmg
+Resources/AppIcon.icns
 
 # Dados do usuário (gerados em ~/Library/Application Support/VisaoClinica)
 data/

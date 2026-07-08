@@ -23,6 +23,8 @@ struct LoginView: View {
     var body: some View {
         VStack(spacing: 16) {
             Spacer()
+            Image(systemName: "waveform.path.ecg.rectangle.fill")
+                .font(.system(size: 48)).foregroundColor(Palette.accent)
             Text("Visão Clínica").font(.system(size: 30, weight: .bold))
             Text(m.needsFirstAdmin ? "Primeiro acesso — crie o administrador"
                                    : "Identifique-se para continuar")
@@ -62,13 +64,18 @@ struct MainView: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
+                Image(systemName: "waveform.path.ecg.rectangle")
+                    .font(.system(size: 26)).foregroundColor(Palette.accent)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Visão Clínica").font(.system(size: 22, weight: .bold))
                     Text("Triagem por visão computacional — 100% local · nativo macOS")
                         .font(.system(size: 12)).foregroundColor(Palette.muted)
                 }
                 Spacer()
-                Text("👤 \(m.currentUser) · \(m.role)")
+                Button { m.showHistory = true } label: {
+                    Label("Histórico", systemImage: "clock.arrow.circlepath")
+                }.buttonStyle(.bordered)
+                Label("\(m.currentUser) · \(m.role)", systemImage: "person.crop.circle")
                     .font(.system(size: 12)).foregroundColor(Palette.muted)
             }
 
@@ -82,33 +89,50 @@ struct MainView: View {
         }
         .padding(18)
         .background(Palette.bg)
+        .sheet(isPresented: $m.showHistory) { HistoryView().environmentObject(m) }
     }
 
     private var cameraColumn: some View {
         VStack(spacing: 10) {
             ZStack(alignment: .top) {
-                CameraPreview(session: m.camera.session)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.border))
-                HStack(spacing: 8) {
-                    Circle().fill(m.guidanceOK ? Palette.green : Palette.amber).frame(width: 12, height: 12)
-                    Text(m.guidanceText).font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(m.guidanceOK ? Palette.green : Palette.amber)
-                    Spacer()
+                if m.cameraDenied {
+                    PermissionDeniedView().frame(minHeight: 420)
+                } else {
+                    CameraPreview(session: m.camera.session)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Palette.border))
+                        .overlay(alignment: .bottom) {
+                            WaveformView(samples: m.waveform)
+                                .frame(height: 56)
+                                .padding(10)
+                                .background(Color.black.opacity(0.35))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .padding(10)
+                        }
+                    HStack(spacing: 8) {
+                        Image(systemName: m.guidanceOK ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundColor(m.guidanceOK ? Palette.green : Palette.amber)
+                        Text(m.guidanceText).font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(m.guidanceOK ? Palette.green : Palette.amber)
+                        Spacer()
+                    }
+                    .padding(10)
+                    .background(Color.black.opacity(0.55))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(10)
                 }
-                .padding(10)
-                .background(Color.black.opacity(0.55))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .padding(10)
             }
             .frame(minHeight: 420)
 
             ProgressView(value: m.progress).tint(Palette.accent)
             HStack {
-                Button(m.isAnalyzing ? "Analisando…" : "Analisar (12s)") { m.analyze() }
-                    .disabled(m.isAnalyzing)
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.return, modifiers: .command)
+                Button { m.analyze() } label: {
+                    Label(m.isAnalyzing ? "Analisando…" : "Analisar (12s)",
+                          systemImage: "waveform.path.ecg")
+                }
+                .disabled(m.isAnalyzing || m.cameraDenied)
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.return, modifiers: .command)
                 Text(m.statusText).font(.system(size: 12)).foregroundColor(Palette.muted)
                 Spacer()
             }

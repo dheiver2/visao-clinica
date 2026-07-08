@@ -14,6 +14,9 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     var onGuidance: ((String, Bool) -> Void)?
     var onProgress: ((Double) -> Void)?
     var onResult: ((BiomarkerFeatures) -> Void)?
+    var onWaveform: (([Double]) -> Void)?
+
+    private var waveBuf: [Double] = []      // onda de pulso ao vivo (verde da testa)
 
     private let duration: Double = 12.0
     private var analyzing = false
@@ -40,11 +43,17 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         session.commitConfiguration()
     }
 
-    func start() {
+    func start(completion: ((Bool) -> Void)? = nil) {
         AVCaptureDevice.requestAccess(for: .video) { [weak self] ok in
+            DispatchQueue.main.async { completion?(ok) }
             guard ok, let self else { return }
             self.queue.async { self.session.startRunning() }
         }
+    }
+
+    static var cameraAuthorized: Bool {
+        AVCaptureDevice.authorizationStatus(for: .video) != .denied
+            && AVCaptureDevice.authorizationStatus(for: .video) != .restricted
     }
 
     func stop() { queue.async { self.session.stopRunning() } }
@@ -70,10 +79,16 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
             let sample = FaceBiomarkers.extract(obs, pixelBuffer: pb)
             let (msg, ok) = guidance(obs, luminance: sample?.luminance ?? 120)
             onGuidance?(msg, ok)
-            if analyzing, let s = sample {
-                ear.append(s.ear); asym.append(s.asymmetry); gx.append(s.gazeX); gy.append(s.gazeY)
-                mouthOpen.append(s.mouthOpen); brow.append(s.browRaise)
-                lum.append(s.luminance); roi.append(s.roi)
+            if let s = sample {
+                // onda de pulso ao vivo (canal verde da testa) — sempre
+                waveBuf.append(s.roi[1])
+                if waveBuf.count > 160 { waveBuf.removeFirst(waveBuf.count - 160) }
+                onWaveform?(waveBuf)
+                if analyzing {
+                    ear.append(s.ear); asym.append(s.asymmetry); gx.append(s.gazeX); gy.append(s.gazeY)
+                    mouthOpen.append(s.mouthOpen); brow.append(s.browRaise)
+                    lum.append(s.luminance); roi.append(s.roi)
+                }
             }
         } else {
             onGuidance?("Rosto não detectado — posicione-se na câmera", false)

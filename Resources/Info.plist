@@ -8,6 +8,8 @@
     <string>Visão Clínica</string>
     <key>CFBundleExecutable</key>
     <string>VisaoClinica</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>br.com.visaoclinica.app</string>
     <key>CFBundlePackageType</key>

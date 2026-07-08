@@ -1,5 +1,10 @@
+import AppKit
 import Foundation
 import SwiftUI
+
+extension Notification.Name {
+    static let analyzeNow = Notification.Name("VisaoClinica.analyzeNow")
+}
 
 /// Estado central do app (MVVM) — autenticação, câmera e resultado clínico.
 @MainActor
@@ -18,6 +23,9 @@ final class AppModel: ObservableObject {
     @Published var isAnalyzing = false
     @Published var progress = 0.0
     @Published var statusText = "Faça login para começar."
+    @Published var waveform: [Double] = []
+    @Published var cameraDenied = false
+    @Published var showHistory = false
 
     // resultado
     @Published var features: BiomarkerFeatures?
@@ -40,6 +48,24 @@ final class AppModel: ObservableObject {
         }
         camera.onResult = { [weak self] f in
             Task { @MainActor in self?.handleResult(f) }
+        }
+        camera.onWaveform = { [weak self] w in
+            Task { @MainActor in self?.waveform = w }
+        }
+        NotificationCenter.default.addObserver(forName: .analyzeNow, object: nil, queue: .main) {
+            [weak self] _ in Task { @MainActor in self?.analyzeIfPossible() }
+        }
+    }
+
+    func analyzeIfPossible() {
+        if isAuthenticated && !isAnalyzing { analyze() }
+    }
+
+    func recentSessions() -> [AppDatabase.SessionRow] { db.recentSessions(limit: 60) }
+
+    func openSystemCameraSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
+            NSWorkspace.shared.open(url)
         }
     }
 
@@ -69,7 +95,10 @@ final class AppModel: ObservableObject {
 
     func startCamera() {
         camera.configure()
-        camera.start()
+        camera.start { [weak self] granted in
+            self?.cameraDenied = !granted
+            if granted { self?.guidanceText = "Posicione o rosto na câmera" }
+        }
     }
 
     func analyze() {
