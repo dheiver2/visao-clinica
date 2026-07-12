@@ -16,9 +16,8 @@ struct ContentView: View {
 
 struct LoginView: View {
     @EnvironmentObject var m: AppModel
-    @State private var user = "admin"
-    @State private var pw = "admin"
-    @State private var confirm = ""
+    @State private var user = ""
+    @State private var pw = ""
 
     var body: some View {
         VStack(spacing: 16) {
@@ -26,27 +25,17 @@ struct LoginView: View {
             Image(systemName: "waveform.path.ecg.rectangle.fill")
                 .font(.system(size: 48)).foregroundColor(Palette.accent)
             Text("Visão Clínica").font(.system(size: 30, weight: .bold))
-            Text(m.needsFirstAdmin ? "Primeiro acesso — crie o administrador"
-                                   : "Identifique-se para continuar")
+            Text("Identifique-se para continuar")
                 .foregroundColor(Palette.muted)
             VStack(spacing: 10) {
                 TextField("Usuário", text: $user).textFieldStyle(.roundedBorder)
                 SecureField("Senha", text: $pw).textFieldStyle(.roundedBorder)
-                if m.needsFirstAdmin {
-                    SecureField("Confirmar senha", text: $confirm).textFieldStyle(.roundedBorder)
-                    Text("Mín. 8 caracteres, com letras e números.")
-                        .font(.system(size: 11)).foregroundColor(Palette.muted)
-                }
             }.frame(width: 320)
             if !m.loginError.isEmpty {
                 Text(m.loginError).foregroundColor(Palette.red).font(.system(size: 12))
             }
-            Button(m.needsFirstAdmin ? "Criar administrador" : "Entrar") {
-                if m.needsFirstAdmin {
-                    m.createFirstAdmin(user: user, password: pw, confirm: confirm)
-                } else {
-                    m.login(user: user, password: pw)
-                }
+            Button("Entrar") {
+                m.login(user: user, password: pw)
             }
             .keyboardShortcut(.defaultAction)
             .buttonStyle(.borderedProminent)

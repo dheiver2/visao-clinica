@@ -10,9 +10,9 @@ extension Notification.Name {
 @MainActor
 final class AppModel: ObservableObject {
 
-    // autenticação / controle de acesso
+    // autenticação / controle de acesso (barreira simples local — credenciais
+    // fixas admin/admin, sem hash/persistência; login é exigido a cada abertura)
     @Published var isAuthenticated = false
-    @Published var needsFirstAdmin = false
     @Published var currentUser = ""
     @Published var role = ""
     @Published var loginError = ""
@@ -38,8 +38,6 @@ final class AppModel: ObservableObject {
     let camera = CameraController()
 
     init() {
-        db.ensureDefaultAdmin()               // semeia admin/admin se vazio
-        needsFirstAdmin = db.userCount() == 0
         camera.onGuidance = { [weak self] msg, ok in
             Task { @MainActor in self?.guidanceText = msg; self?.guidanceOK = ok }
         }
@@ -71,19 +69,14 @@ final class AppModel: ObservableObject {
     }
 
     // MARK: - Autenticação
-
-    func createFirstAdmin(user: String, password: String, confirm: String) {
-        guard password == confirm else { loginError = "As senhas não conferem."; return }
-        if let e = db.createUser(user, password, role: "administrador") { loginError = e; return }
-        db.log(user, "usuario_criado", "administrador (1º acesso)")
-        needsFirstAdmin = false
-        login(user: user, password: password)
-    }
+    // Barreira de acesso simples e local: credenciais fixas ("admin"/"admin",
+    // case-sensitive), sem hash, sem Keychain, sem persistência entre execuções.
+    // isAuthenticated nasce false a cada abertura do app — login é sempre exigido.
 
     func login(user: String, password: String) {
-        if let r = db.verify(user, password) {
-            currentUser = user; role = r; isAuthenticated = true; loginError = ""
-            db.log(user, "login", "perfil=\(r)")
+        if user == "admin" && password == "admin" {
+            currentUser = user; role = "administrador"; isAuthenticated = true; loginError = ""
+            db.log(user, "login", "perfil=\(role)")
             statusText = "Câmera ativa — clique em Analisar."
             startCamera()
         } else {
