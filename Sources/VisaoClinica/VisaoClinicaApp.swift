@@ -7,10 +7,10 @@ enum Entry {
     static func main() {
         let args = CommandLine.arguments
         if args.contains("--selftest") {
-            SelfTest.run()   // não retorna (exit)
+            SelfTest.run()   // does not return (exit)
         }
         if let i = args.firstIndex(of: "--make-icon"), i + 1 < args.count {
-            IconGenerator.write(to: args[i + 1])   // não retorna (exit)
+            IconGenerator.write(to: args[i + 1])   // does not return (exit)
         }
         VisaoClinicaApp.main()
     }
@@ -27,12 +27,12 @@ struct VisaoClinicaApp: App {
         .windowResizability(.contentMinSize)
         .commands {
             CommandGroup(replacing: .newItem) {}   // remove "New Window"
-            CommandMenu("Análise") {
-                Button("Analisar agora") {
+            CommandMenu("Analysis") {
+                Button("Analyze now") {
                     NotificationCenter.default.post(name: .analyzeNow, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: .command)
-                Button("Histórico & Tendências…") { model.showHistory = true }
+                Button("History & Trends…") { model.showHistory = true }
                     .keyboardShortcut("h", modifiers: [.command, .shift])
             }
         }

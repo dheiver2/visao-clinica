@@ -37,14 +37,14 @@ struct PermissionDeniedView: View {
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "video.slash.fill").font(.system(size: 40)).foregroundColor(Palette.amber)
-            Text("Acesso à câmera negado").font(.system(size: 16, weight: .bold))
-            Text("O Visão Clínica precisa da câmera para a triagem. Autorize em Ajustes do Sistema › Privacidade e Segurança › Câmera.")
+            Text("Camera access denied").font(.system(size: 16, weight: .bold))
+            Text("Visão Clínica needs the camera for screening. Allow it in System Settings › Privacy & Security › Camera.")
                 .font(.system(size: 12)).foregroundColor(Palette.muted)
                 .multilineTextAlignment(.center).frame(maxWidth: 320)
             Button {
                 m.openSystemCameraSettings()
             } label: {
-                Label("Abrir Ajustes do Sistema", systemImage: "gearshape")
+                Label("Open System Settings", systemImage: "gearshape")
             }.buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -67,7 +67,7 @@ struct HistoryView: View {
         }
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("Histórico & Tendências", systemImage: "clock.arrow.circlepath")
+                Label("History & Trends", systemImage: "clock.arrow.circlepath")
                     .font(.system(size: 16, weight: .bold))
                 Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark.circle.fill") }
@@ -75,27 +75,27 @@ struct HistoryView: View {
             }
 
             if points.isEmpty {
-                Text("Nenhuma sessão salva ainda. Faça uma análise para começar a acompanhar suas tendências.")
+                Text("No saved sessions yet. Run an analysis to start tracking your trends.")
                     .foregroundColor(Palette.muted).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 let avgW = points.map { Double($0.wellness) }.reduce(0, +) / Double(points.count)
                 let avgHR = points.map { $0.hr }.filter { $0 > 0 }
-                Text("\(points.count) sessões · bem-estar médio \(Int(avgW))/100"
-                     + (avgHR.isEmpty ? "" : " · FC média \(Int(avgHR.reduce(0, +) / Double(avgHR.count))) bpm"))
+                Text("\(points.count) sessions · average wellness \(Int(avgW))/100"
+                     + (avgHR.isEmpty ? "" : " · avg HR \(Int(avgHR.reduce(0, +) / Double(avgHR.count))) bpm"))
                     .font(.system(size: 12)).foregroundColor(Palette.muted)
 
                 Text("BEM-ESTAR (0–100)").font(.system(size: 10, weight: .bold)).foregroundColor(Palette.muted)
                 Chart(points) { p in
-                    LineMark(x: .value("Sessão", p.id), y: .value("Bem-estar", p.wellness))
+                    LineMark(x: .value("Session", p.id), y: .value("Wellness", p.wellness))
                         .foregroundStyle(Palette.green).interpolationMethod(.catmullRom)
-                    PointMark(x: .value("Sessão", p.id), y: .value("Bem-estar", p.wellness))
+                    PointMark(x: .value("Session", p.id), y: .value("Wellness", p.wellness))
                         .foregroundStyle(Palette.green)
                 }
                 .chartYScale(domain: 0...100).frame(height: 150)
 
-                Text("FREQUÊNCIA CARDÍACA (bpm)").font(.system(size: 10, weight: .bold)).foregroundColor(Palette.muted)
+                Text("HEART RATE (bpm)").font(.system(size: 10, weight: .bold)).foregroundColor(Palette.muted)
                 Chart(points.filter { $0.hr > 0 }) { p in
-                    LineMark(x: .value("Sessão", p.id), y: .value("FC", p.hr))
+                    LineMark(x: .value("Session", p.id), y: .value("HR", p.hr))
                         .foregroundStyle(Palette.accent).interpolationMethod(.catmullRom)
                 }
                 .frame(height: 130)

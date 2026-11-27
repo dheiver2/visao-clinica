@@ -91,7 +91,7 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
                 }
             }
         } else {
-            onGuidance?("Rosto não detectado — posicione-se na câmera", false)
+            onGuidance?("Face not detected — position yourself in front of the camera", false)
         }
 
         if analyzing {
@@ -105,12 +105,12 @@ final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBufferDele
         let b = obs.boundingBox
         let fw = Double(b.width)
         let cx = Double(b.midX), cy = Double(b.midY)
-        if fw < 0.20 { return ("Aproxime-se da câmera", false) }
-        if fw > 0.75 { return ("Afaste-se um pouco", false) }
-        if abs(cx - 0.5) > 0.18 || abs(cy - 0.5) > 0.20 { return ("Centralize o rosto", false) }
-        if luminance < 55 { return ("Ambiente escuro — melhore a iluminação", false) }
-        if luminance > 210 { return ("Muita luz — reduza o brilho", false) }
-        return ("Enquadramento ótimo — pode analisar", true)
+        if fw < 0.20 { return ("Move closer to the camera", false) }
+        if fw > 0.75 { return ("Move back a little", false) }
+        if abs(cx - 0.5) > 0.18 || abs(cy - 0.5) > 0.20 { return ("Center your face", false) }
+        if luminance < 55 { return ("Too dark — improve the lighting", false) }
+        if luminance > 210 { return ("Too bright — reduce the light", false) }
+        return ("Framing is great — ready to analyze", true)
     }
 
     private func finish(elapsed: Double) {
