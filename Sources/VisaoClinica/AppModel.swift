@@ -18,11 +18,11 @@ final class AppModel: ObservableObject {
     @Published var loginError = ""
 
     // câmera / captura guiada
-    @Published var guidanceText = "Iniciando câmera…"
+    @Published var guidanceText = "Starting camera…"
     @Published var guidanceOK = false
     @Published var isAnalyzing = false
     @Published var progress = 0.0
-    @Published var statusText = "Faça login para começar."
+    @Published var statusText = "Sign in to get started."
     @Published var waveform: [Double] = []
     @Published var cameraDenied = false
     @Published var showHistory = false
@@ -52,7 +52,7 @@ final class AppModel: ObservableObject {
         }
         NotificationCenter.default.addObserver(forName: .analyzeNow, object: nil, queue: .main) {
             [weak self] _ in
-            MainActor.assumeIsolated { self?.analyzeIfPossible() }   // já na fila .main
+            MainActor.assumeIsolated { self?.analyzeIfPossible() }   // already on the .main queue
         }
     }
 
@@ -77,11 +77,11 @@ final class AppModel: ObservableObject {
         if user == "admin" && password == "admin" {
             currentUser = user; role = "administrador"; isAuthenticated = true; loginError = ""
             db.log(user, "login", "perfil=\(role)")
-            statusText = "Câmera ativa — clique em Analisar."
+            statusText = "Camera active — click Analyze."
             startCamera()
         } else {
             db.log(user, "login_falha")
-            loginError = "Usuário ou senha inválidos."
+            loginError = "Invalid username or password."
         }
     }
 
@@ -91,7 +91,7 @@ final class AppModel: ObservableObject {
         camera.configure()
         camera.start { [weak self] granted in
             self?.cameraDenied = !granted
-            if granted { self?.guidanceText = "Posicione o rosto na câmera" }
+            if granted { self?.guidanceText = "Position your face in the camera" }
         }
     }
 
@@ -99,7 +99,7 @@ final class AppModel: ObservableObject {
         isAnalyzing = true
         hasResult = false
         progress = 0
-        statusText = "Analisando… olhe para a câmera (12s)."
+        statusText = "Analyzing… look at the camera (12s)."
         camera.requestAnalysis()
     }
 
@@ -114,7 +114,7 @@ final class AppModel: ObservableObject {
         wellness = well
         risk = riskLevel
         hasResult = true
-        statusText = String(format: "Concluído — qualidade do sinal %.0f%%.", f.signalQuality * 100)
+        statusText = String(format: "Done — signal quality %.0f%%.", f.signalQuality * 100)
 
         let json = (try? JSONEncoder().encode(f)).flatMap { String(data: $0, encoding: .utf8) } ?? ""
         db.saveSession(mode: "triagem", risk: riskLevel, wellness: well.score,

@@ -12,7 +12,7 @@ enum IconGenerator {
         guard let ctx = CGContext(data: nil, width: s, height: s, bitsPerComponent: 8,
                                   bytesPerRow: 0, space: cs,
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-            FileHandle.standardError.write(Data("Falha ao criar contexto do ícone\n".utf8)); exit(1)
+            FileHandle.standardError.write(Data("Failed to create icon context\n".utf8)); exit(1)
         }
 
         func color(_ hex: UInt32) -> CGColor {
@@ -63,7 +63,7 @@ enum IconGenerator {
         }
         CGImageDestinationAddImage(dest, img, nil)
         CGImageDestinationFinalize(dest)
-        print("Ícone salvo em \(path)")
+        print("Icon saved to \(path)")
         exit(0)
     }
 }

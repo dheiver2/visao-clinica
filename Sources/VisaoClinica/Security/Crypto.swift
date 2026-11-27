@@ -53,7 +53,7 @@ func validatePassword(_ pwd: String) -> String? {
     if pwd.count < 8 { return "A senha deve ter ao menos 8 caracteres." }
     let hasLetter = pwd.contains { $0.isLetter }
     let hasDigit = pwd.contains { $0.isNumber }
-    if !hasLetter || !hasDigit { return "A senha deve conter letras e números." }
+    if !hasLetter || !hasDigit { return "The password must contain letters and numbers." }
     return nil
 }
 

@@ -1,87 +1,87 @@
-# Visão Clínica — Triagem por Visão Computacional (nativo macOS)
+# Visão Clínica — Computer-Vision Screening (native macOS)
 
 [![CI](https://github.com/dheiver2/visao-clinica/actions/workflows/ci.yml/badge.svg)](https://github.com/dheiver2/visao-clinica/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Swift 5.9+](https://img.shields.io/badge/swift-5.9%2B-orange.svg)](Package.swift)
-[![Plataforma: macOS 13+](https://img.shields.io/badge/plataforma-macOS%2013%2B-lightgrey.svg)](#requisitos)
+[![Platform: macOS 13+](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey.svg)](#requirements)
 
-Aplicação **100% nativa macOS (Swift/SwiftUI)** e **100% local/offline** que extrai
-biomarcadores e **sinais vitais sem contato** pela webcam, com triagem clínica
-**determinística**. Zero Python — só frameworks nativos da Apple.
+A **100% native macOS (Swift/SwiftUI)** and **100% local/offline** app that extracts
+biomarkers and **contactless vital signs** from the webcam, with **deterministic**
+clinical screening. Zero Python — Apple native frameworks only.
 
-> **Ferramenta de triagem e apoio à pesquisa.** Não constitui diagnóstico médico
-> e não substitui avaliação profissional. Dados: ver [PRIVACY.md](PRIVACY.md) (LGPD).
+> **Screening and research-support tool.** Not a medical diagnosis
+> and not a substitute for professional evaluation. Data: see [PRIVACY.md](PRIVACY.md) (LGPD).
 
-## Arquitetura (100% frameworks nativos)
+## Architecture (100% native frameworks)
 
 ```
-Webcam (AVFoundation) → Vision (landmarks) → Biomarcadores + ROI de pele
-   → Accelerate/DSP (rPPG POS, FFT, HRV) → Motor clínico determinístico
-   → SwiftUI (painel + vitais) · SQLite (sessões/auditoria) · CryptoKit (acesso)
+Webcam (AVFoundation) → Vision (landmarks) → Biomarkers + skin ROI
+   → Accelerate/DSP (rPPG POS, FFT, HRV) → Deterministic clinical engine
+   → SwiftUI (dashboard + vitals) · SQLite (sessions/audit) · CryptoKit (access)
 ```
 
-| Camada | Antes (Python) | Agora (Swift nativo) |
+| Layer | Before (Python) | Now (native Swift) |
 |---|---|---|
 | UI | PySide6 | **SwiftUI** — `Views/` |
 | Webcam | OpenCV | **AVFoundation** — `Camera/CameraController.swift` |
 | Landmarks | MediaPipe | **Vision** — `Vision/FaceBiomarkers.swift` |
 | DSP (rPPG/FFT/HRV) | NumPy/SciPy | **Swift/Accelerate** — `Signal/DSP.swift`, `Vitals/Vitals.swift` |
-| Motor clínico | Python | **Swift** — `Clinical/Clinical.swift` |
-| Persistência | sqlite3 (py) | **SQLite3** — `Storage/Database.swift` |
-| Senha/acesso | hashlib | **CommonCrypto (PBKDF2)** — `Security/Crypto.swift` |
+| Clinical engine | Python | **Swift** — `Clinical/Clinical.swift` |
+| Persistence | sqlite3 (py) | **SQLite3** — `Storage/Database.swift` |
+| Password/access | hashlib | **CommonCrypto (PBKDF2)** — `Security/Crypto.swift` |
 
-## Requisitos
+## Requirements
 
 - **macOS 13+** (Apple Silicon)
-- **Swift 5.9+** (via Xcode ou Command Line Tools — `xcode-select --install`)
+- **Swift 5.9+** (via Xcode or Command Line Tools — `xcode-select --install`)
 
-## Build & execução
+## Build & run
 
 ```bash
-# app nativo (.app autocontido, assinado ad-hoc)
+# native app (self-contained .app, ad-hoc signed)
 bash scripts/build_macos.sh
-open "dist/Visão Clínica.app"      # na 1ª vez o macOS pede acesso à câmera
+open "dist/Visão Clínica.app"      # macOS asks for camera access on first launch
 
-# desenvolvimento
+# development
 swift build && swift run VisaoClinica
 
-# validação do núcleo (sem Xcode — roda com Command Line Tools)
+# core validation (no Xcode needed — runs with Command Line Tools)
 swift run VisaoClinica --selftest
 ```
 
-No primeiro uso o app pede a criação de um **usuário administrador** (controle de
-acesso) e o **consentimento de câmera** (LGPD).
+On first use the app asks you to create an **administrator user** (access
+control) and to give **camera consent** (LGPD).
 
-## Funcionalidades (versão nativa)
+## Features (native version)
 
-- **Captura guiada** em tempo real (posição, distância e iluminação) com **onda de
-  pulso ao vivo** (Canvas) sobre o preview.
-- **Sinais vitais sem contato** por rPPG (método POS): frequência cardíaca,
-  respiração (RIIV), VFC (SDNN/RMSSD/pNN50), balanço LF/HF e índice de estresse de Baevsky.
-- **Score de bem-estar (0–100)** — síntese determinística.
-- **Painel clínico determinístico** por condição (estresse/ansiedade, sonolência,
-  assimetria facial) com nível de risco e racional.
-- **Histórico & tendências** com **Swift Charts** (evolução de bem-estar e FC).
-- **Controle de acesso por perfil** (administrador/profissional/pesquisador) com
-  PBKDF2 e **trilha de auditoria (LGPD)** em SQLite.
-- Acabamento nativo: **ícone próprio**, **menus/atalhos ⌘** (⌘R analisar,
-  ⇧⌘H histórico), **SF Symbols**, UX de **permissão de câmera** e **binário universal**.
+- **Guided capture** in real time (position, distance and lighting) with a **live
+  pulse wave** (Canvas) over the preview.
+- **Contactless vital signs** via rPPG (POS method): heart rate,
+  respiration (RIIV), HRV (SDNN/RMSSD/pNN50), LF/HF balance and Baevsky stress index.
+- **Wellness score (0–100)** — deterministic synthesis.
+- **Deterministic clinical dashboard** per condition (stress/anxiety, drowsiness,
+  facial asymmetry) with risk level and rationale.
+- **History & trends** with **Swift Charts** (wellness and HR evolution).
+- **Role-based access control** (administrator/professional/researcher) with
+  PBKDF2 and an **audit trail (LGPD)** in SQLite.
+- Native polish: **custom icon**, **⌘ menus/shortcuts** (⌘R analyze,
+  ⇧⌘H history), **SF Symbols**, **camera permission** UX and **universal binary**.
 
-## Roadmap de paridade (portando do app Python legado)
+## Parity roadmap (porting from the legacy Python app)
 
-Itens em migração para o nativo: módulo ocupacional **NR-01**, exportação **PDF**
-(PDFKit) com personalização institucional, **gestão completa** de usuários/auditoria
-na UI, **acessibilidade eMAG** (fonte/alto contraste), **backup/restauração**, o
-conjunto completo de **12 indicadores** e a narrativa opcional por **LLM local** (MLX).
+Items being migrated to native: the **NR-01** occupational module, **PDF** export
+(PDFKit) with institutional branding, **full management** of users/audit in the
+UI, **eMAG accessibility** (font/high contrast), **backup/restore**, the full set of
+**12 indicators** and the optional **local LLM** (MLX) narrative.
 
-## Testes
+## Tests
 
-O self-test nativo valida o núcleo determinístico (rPPG, VFC, bem-estar, condições,
-controle de acesso) sem depender do Xcode:
+The native self-test validates the deterministic core (rPPG, HRV, wellness, conditions,
+access control) without depending on Xcode:
 
 ```bash
 swift run VisaoClinica --selftest
 ```
 
-O CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) roda `swift build` +
-self-test em `macos-14` a cada push/PR.
+CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs `swift build` +
+the self-test on `macos-14` on every push/PR.

@@ -23,7 +23,7 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSCameraUsageDescription</key>
-    <string>O Visão Clínica usa a câmera para a triagem por visão computacional, processada 100% localmente.</string>
+    <string>Visão Clínica uses the camera for computer-vision screening, processed 100% locally.</string>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.medical</string>
 </dict>

@@ -102,10 +102,10 @@ final class AppDatabase {
     @discardableResult
     func createUser(_ username: String, _ password: String, role: String) -> String? {
         let u = username.trimmingCharacters(in: .whitespaces)
-        if u.isEmpty { return "Informe um nome de usuário." }
-        if !ROLES.contains(role) { return "Perfil inválido." }
+        if u.isEmpty { return "Enter a username." }
+        if !ROLES.contains(role) { return "Invalid role." }
         if let e = validatePassword(password) { return e }
-        return insertUser(u, password, role: role) ? nil : "Já existe um usuário com esse nome."
+        return insertUser(u, password, role: role) ? nil : "A user with that name already exists."
     }
 
     /// Inserção direta (sem política de senha) — usada pelo seed do admin padrão.

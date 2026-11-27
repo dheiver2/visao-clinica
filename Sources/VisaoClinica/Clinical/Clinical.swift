@@ -32,6 +32,14 @@ enum Clinical {
         hi <= lo ? 0 : clamp((x - lo) / (hi - lo))
     }
 
+    /// Display text for internal (persisted) level/label/role keys, which stay in Portuguese.
+    static func display(_ key: String) -> String {
+        let map = ["baixo": "low", "moderado": "moderate", "alto": "high", "indeterminado": "undetermined",
+                   "ótimo": "great", "bom": "good", "alerta": "alert",
+                   "administrador": "administrator", "profissional": "professional", "pesquisador": "researcher"]
+        return map[key] ?? key
+    }
+
     static func level(_ score: Double) -> String {
         if score >= 0.66 { return "alto" }
         if score >= 0.33 { return "moderado" }
@@ -52,13 +60,13 @@ enum Clinical {
             let lowHrv = ramp(40 - f.hrvSdnnMs, 0, 40) * hrvGate
             let score = clamp(0.45 * micro + 0.3 * blink + 0.25 * lowHrv)
             var factors: [String] = []
-            if micro > 0.3 { factors.append(String(format: "microexpressões %.0f/min", f.microexpressionRate)) }
-            if blink > 0.3 { factors.append("piscar acelerado") }
-            if lowHrv > 0.3 { factors.append(String(format: "VFC reduzida (SDNN %.0f ms)", f.hrvSdnnMs)) }
-            out.append(ConditionResult(key: "estresse", name: "Estresse / ansiedade",
+            if micro > 0.3 { factors.append(String(format: "micro-expressions %.0f/min", f.microexpressionRate)) }
+            if blink > 0.3 { factors.append("rapid blinking") }
+            if lowHrv > 0.3 { factors.append(String(format: "reduced HRV (SDNN %.0f ms)", f.hrvSdnnMs)) }
+            out.append(ConditionResult(key: "estresse", name: "Stress / anxiety",
                                        score: score, level: level(score), factors: factors,
-                                       rationale: factors.isEmpty ? "Sem sinais relevantes." :
-                                        "Sustentado por: " + factors.joined(separator: "; "),
+                                       rationale: factors.isEmpty ? "No relevant signs." :
+                                        "Supported by: " + factors.joined(separator: "; "),
                                        confidence: conf))
         }
 
@@ -67,11 +75,11 @@ enum Clinical {
             let lowBlink = ramp(10 - f.blinkRatePerMin, 0, 10)
             let score = clamp(lowBlink)
             var factors: [String] = []
-            if lowBlink > 0.3 { factors.append("piscar reduzido") }
-            out.append(ConditionResult(key: "sonolencia", name: "Sonolência / fadiga",
+            if lowBlink > 0.3 { factors.append("reduced blinking") }
+            out.append(ConditionResult(key: "sonolencia", name: "Drowsiness / fatigue",
                                        score: score, level: level(score), factors: factors,
-                                       rationale: factors.isEmpty ? "Sem sinais relevantes." :
-                                        "Sustentado por: " + factors.joined(separator: "; "),
+                                       rationale: factors.isEmpty ? "No relevant signs." :
+                                        "Supported by: " + factors.joined(separator: "; "),
                                        confidence: conf))
         }
 
@@ -79,11 +87,11 @@ enum Clinical {
         do {
             let score = clamp(ramp(f.facialAsymmetry, 0.15, 0.5))
             var factors: [String] = []
-            if score > 0.3 { factors.append(String(format: "assimetria facial %.2f", f.facialAsymmetry)) }
-            out.append(ConditionResult(key: "assimetria", name: "Assimetria facial",
+            if score > 0.3 { factors.append(String(format: "facial asymmetry %.2f", f.facialAsymmetry)) }
+            out.append(ConditionResult(key: "assimetria", name: "Facial asymmetry",
                                        score: score, level: level(score), factors: factors,
-                                       rationale: factors.isEmpty ? "Sem sinais relevantes." :
-                                        "Sustentado por: " + factors.joined(separator: "; "),
+                                       rationale: factors.isEmpty ? "No relevant signs." :
+                                        "Supported by: " + factors.joined(separator: "; "),
                                        confidence: conf))
         }
 
